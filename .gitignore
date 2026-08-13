@@ -7,3 +7,4 @@ CLAUDE.local.md
 build/
 pubspec.lock
 !/pubspec.lock
+.superpowers/
