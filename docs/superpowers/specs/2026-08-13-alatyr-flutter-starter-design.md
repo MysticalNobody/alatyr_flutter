@@ -167,6 +167,11 @@ natively with a 32 KiB default cap, Claude Code imports it). Sections:
       and the waiver is recorded in the task report — the agent never waives
       it unilaterally.
    5. Human behavioral check for UI-affecting changes.
+
+   Every completion report ends with a mandatory **Remaining risks** section
+   consolidating waivers, deliberate skips, and unverified assumptions (an
+   empty section states "none" explicitly) — the honesty forcing-function
+   behind any "done" claim.
 7. **Stop conditions:** ambiguity → stop and ask or file an ADR draft; never
    improvise around a failing gate; keep diffs scoped to the task.
 8. **Commands:** `tool/checks.sh --fast` | full | `--package <p>`,
@@ -244,11 +249,19 @@ are owned by `.claude/rules/testing.md` + the Code Review Rules rubric.
 **The graph-first ritual** (for every new feature/package):
 
 1. Agent proposes the package shape by **editing `package_graph.yaml`**
-   (new packages, kinds, `allowed_dependencies`).
-2. Human approves the graph diff (a 30-second review — the single cheap
+   (new packages, kinds, `allowed_dependencies`) and drafts the feature plan.
+2. *Optional, recommended for non-trivial features:* **challenge the plan** —
+   a fresh read-only Codex pass over the plan and graph diff
+   (`codex exec -s read-only`), hunting misunderstood requirements, missing
+   edge cases, excess complexity, and architectural conflicts. Findings come
+   back as BLOCKER/MAJOR/MINOR with an `APPROVE`/`REVISE` verdict; one round
+   is normally enough. The agent evaluates findings on merit — never
+   auto-applies them. Catching a wrong plan here costs minutes; catching it
+   in the diff costs the whole implementation.
+3. Human approves the graph diff (a 30-second review — the single cheap
    checkpoint tools cannot replace: "is this designed right?").
-3. Agent implements in fixed order: `*_api` → impl → wiring in `app/`.
-4. Tools enforce "code matches graph" continuously; the gate, adversarial
+4. Agent implements in fixed order: `*_api` → impl → wiring in `app/`.
+5. Tools enforce "code matches graph" continuously; the gate, adversarial
    pass, cross-review, and behavioral check close the loop (§10).
 
 ## 6. Enforcement stack
@@ -631,8 +644,10 @@ docs/
 ├── workflow/
 │   ├── getting-started.md     # fvm, init, trust steps (Claude workspace trust;
 │   │                          # Codex config + hooks trust), first gate run
-│   ├── feature-workflow.md    # the ritual step-by-step + role table +
-│   │                          # opt-in hardening (Stop-hook review gate)
+│   ├── feature-workflow.md    # the ritual step-by-step (incl. optional
+│   │                          # plan-challenge stage) + role table +
+│   │                          # opt-in hardening (Stop-hook review gate) +
+│   │                          # reasoning-effort escalation note
 │   ├── maintenance.md         # pin-update cadence (Codex model, Flutter,
 │   │                          # patrol), upgrade checklist — survives init;
 │   │                          # README links here
@@ -733,3 +748,8 @@ failure in one subsystem (e.g. the lint-plugin pin) never blocks the rest:
 12. Modules: superpowers recommended (per-user), spec-kit/beads optional,
     nothing vendored.
 13. Russian doc twins (`*.ru.md`, gitignored) during template development.
+14. Adopted after comparison with an external Claude+Codex workflow (Habr
+    №1068372, roles inverted there): optional plan-challenge stage in the
+    ritual; mandatory "Remaining risks" section in completion reports. Role
+    inversion itself rejected — our harness lives on the implementer side
+    where Claude Code tooling is richer, and Codex's review tooling is native.
