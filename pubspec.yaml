@@ -1,0 +1,13 @@
+name: alatyr_workspace
+description: Alatyr - Flutter starter for AI-agent development. Workspace root.
+publish_to: none
+environment:
+  sdk: ^3.12.0   # match the Dart bundled with .fvmrc's Flutter
+workspace:
+  - packages/app_core
+  - packages/app_config
+dependencies:
+  path: ^1.9.0
+  yaml: ^3.1.2
+dev_dependencies:
+  test: ^1.25.0
