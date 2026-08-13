@@ -1,0 +1,5 @@
+# Local-only development artifacts of the template itself.
+# Russian doc twins exist only during template development and never ship.
+*.ru.md
+CLAUDE.local.md
+.DS_Store
