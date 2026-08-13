@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # THE quality gate. Tiers:
 #   --fast            format + graph + imports (~seconds, agent inner loop)
-#   (default: full)   fast + codegen freshness + toolchain tests
+#   (default: full)   fast + codegen freshness + toolchain analyze/test
 #                     + per-package analyze/test
-#   --package <path>  targeted analyze+test for one workspace member
+#   --package <path>  fast tier + targeted analyze+test for one workspace
+#                     member
 # M2 appends lint-plugin stages; M5 appends the critical-flows check.
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -20,16 +21,9 @@ esac
 
 temporary_files=()
 cleanup() {
-  # NOTE (deviation from brief): `((${#temporary_files[@]})) && rm -f ...`
-  # returns the *arithmetic test's* exit status (1) when the array is empty,
-  # short-circuiting past rm -f. Under `set -e`, a failing command inside a
-  # trap is NOT itself fatal, but bash still uses the trap handler's own
-  # last exit status as the process's final exit code when the handler
-  # doesn't call exit explicitly - so a "successful" `exit 0`/`OK (fast)`
-  # run was silently turned into exit code 1 whenever temporary_files was
-  # empty (always true for --fast and --package, which never mktemp).
-  # Verified interactively: the `&&` form flips a script that calls
-  # `exit 0` into process exit code 1; the `if` form below preserves 0.
+  # if-form, not `((n)) && ...`: with an empty array the && short-circuit
+  # would make the trap's status 1 and bash would override exit 0 with it
+  # (and bash 3.2 nounset chokes on empty-array expansion).
   if ((${#temporary_files[@]})); then
     rm -f "${temporary_files[@]}"
   fi
@@ -51,14 +45,10 @@ snapshot_worktree() {
 analyze_and_test() { # <runner> <dir> <hasTests>
   local runner="$1" dir="$2" has_tests="$3"
   echo "    analyze ${dir}"
-  # NOTE (deviation from brief, fix round 1 - F2): `[[ ... ]] && run_x test`
-  # is the last command of its branch. When has_tests is false, the `[[ ]]`
-  # test itself is the final command executed in that branch of the `if`,
-  # so its exit status (1) becomes the branch's - and thus the subshell's -
-  # exit status, which set -e treats as a failure of the whole
-  # `( cd ...; if ...; fi )` command. A test-less member silently aborted
-  # the entire gate with exit 1 and no error message. Fixed with an
-  # explicit if/then/fi so a false has_tests cleanly falls through to 0.
+  # Explicit if/then/fi, not `[[ has_tests == true ]] && run_x test` as the
+  # branch's last command: when has_tests is false, the `[[ ]]` test's own
+  # exit status (1) would become the subshell's exit status, and set -e
+  # would fail the whole gate on a test-less member with no error message.
   ( cd "$ROOT_DIR/$dir"
     if [[ "$runner" == "flutter" ]]; then
       run_flutter analyze --no-pub --fatal-infos
@@ -112,20 +102,19 @@ if [[ -n "$before_snapshot" ]]; then
   fi
 fi
 
+echo "==> Toolchain analyze (root)"
+run_dart analyze --fatal-infos .
+
 echo "==> Toolchain tests (root)"
 run_dart test
 
 echo "==> Analyze + test (per workspace package)"
-# NOTE (deviation from brief, fix round 1 - F1): `done < <(run_dart run
-# tool/checks_workspace.dart)` fed the while loop via process substitution,
-# which runs the producer in a background subshell whose exit status is
-# NOT visible to the pipeline/`set -e` (pipefail only covers `|` pipes, not
-# `<(...)`) . A crashing plan builder produced zero lines, the while loop
-# ran zero iterations, and the gate printed a bare "OK" - silently skipping
-# every per-package analyze/test. Fixed by materializing the plan into a
-# variable first (same idiom already used in codegen.sh): the command
-# substitution's failure is caught by `set -e` before the loop ever starts,
-# and an empty-but-successful plan is now also treated as fatal.
+# Materialize the plan into a variable first, not `done < <(run_dart run
+# tool/checks_workspace.dart)`: process substitution runs the producer in a
+# background subshell whose exit status is invisible to `set -e` (pipefail
+# only covers `|` pipes, not `<(...)`), so a crashing plan builder would
+# silently run zero iterations instead of failing the gate. An
+# empty-but-successful plan is also treated as fatal below.
 plan="$(run_dart run tool/checks_workspace.dart)"
 [[ -z "$plan" ]] && { echo "FATAL: empty checks plan" >&2; exit 1; }
 while IFS=$'\t' read -r runner dir has_tests; do

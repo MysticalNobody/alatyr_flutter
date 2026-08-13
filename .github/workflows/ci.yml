@@ -5,6 +5,7 @@ on:
 jobs:
   checks:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       # libsqlite3 is needed by drift tests from M3 on; harmless before that.

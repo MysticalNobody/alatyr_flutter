@@ -11,7 +11,7 @@ List<String> validateDependencies({
   final graphFile = File(p.join(rootDir, graphPath));
   final graph = loadPackageGraph(
     graphFile.readAsStringSync(),
-    sourcePath: graphFile.path,
+    sourcePath: graphPath,
   );
 
   final rootPubspec =

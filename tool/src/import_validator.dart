@@ -207,11 +207,14 @@ List<String> validateImports({
       final dir = Directory(p.join(rootDir, entry.value, scope));
       if (!dir.existsSync()) continue;
       final inLib = scope == 'lib';
-      for (final file
-          in dir
+      final files =
+          dir
               .listSync(recursive: true)
               .whereType<File>()
-              .where((f) => f.path.endsWith('.dart'))) {
+              .where((f) => f.path.endsWith('.dart'))
+              .toList()
+            ..sort((a, b) => a.path.compareTo(b.path));
+      for (final file in files) {
         final relPath = p
             .relative(file.path, from: rootDir)
             .replaceAll(r'\', '/');
