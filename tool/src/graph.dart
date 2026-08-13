@@ -39,7 +39,8 @@ PackageGraph loadPackageGraph(String yamlSource, {required String sourcePath}) {
     throw GraphFormatException('$sourcePath: top level must be a map');
   }
   final kinds = [
-    for (final k in _req<YamlList>(root, 'package_kinds', sourcePath)) k.toString(),
+    for (final k in _req<YamlList>(root, 'package_kinds', sourcePath))
+      k.toString(),
   ];
   final banned = <String, String>{
     for (final e in _req<YamlMap>(root, 'banned_packages', sourcePath).entries)
@@ -60,32 +61,39 @@ PackageGraph loadPackageGraph(String yamlSource, {required String sourcePath}) {
     final kind = value['kind']?.toString();
     if (kind == null || !kinds.contains(kind)) {
       throw GraphFormatException(
-          '$sourcePath: packages.$name has unknown kind "$kind"');
+        '$sourcePath: packages.$name has unknown kind "$kind"',
+      );
     }
     final rawDeps = value['allowed_dependencies'];
     final allowsAll = rawDeps is String && rawDeps == allMembersSentinel;
     final deps = allowsAll
         ? const <String>[]
         : rawDeps is YamlList
-            ? [for (final d in rawDeps) d.toString()]
-            : throw GraphFormatException(
-                '$sourcePath: packages.$name.allowed_dependencies must be a '
-                'list or "$allMembersSentinel"');
+        ? [for (final d in rawDeps) d.toString()]
+        : throw GraphFormatException(
+            '$sourcePath: packages.$name.allowed_dependencies must be a '
+            'list or "$allMembersSentinel"',
+          );
     packages[name] = PackageNode(
-        kind: kind, allowedDependencies: deps, allowsAllMembers: allowsAll);
+      kind: kind,
+      allowedDependencies: deps,
+      allowsAllMembers: allowsAll,
+    );
   }
   for (final entry in packages.entries) {
     for (final dep in entry.value.allowedDependencies) {
       if (!packages.containsKey(dep)) {
         throw GraphFormatException(
-            '$sourcePath: packages.${entry.key} allows unknown package "$dep"');
+          '$sourcePath: packages.${entry.key} allows unknown package "$dep"',
+        );
       }
     }
   }
   for (final name in pure) {
     if (!packages.containsKey(name)) {
       throw GraphFormatException(
-          '$sourcePath: pure_dart_packages lists unknown package "$name"');
+        '$sourcePath: pure_dart_packages lists unknown package "$name"',
+      );
     }
   }
   return PackageGraph(

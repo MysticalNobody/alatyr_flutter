@@ -18,19 +18,24 @@ void main() {
 
   test('sentinel *_all_members sets allowsAllMembers', () {
     final src = fixture('valid.yaml').replaceFirst(
-        'app_config: { kind: base, allowed_dependencies: [app_core] }',
-        'app_config: { kind: base, allowed_dependencies: "*_all_members" }');
+      'app_config: { kind: base, allowed_dependencies: [app_core] }',
+      'app_config: { kind: base, allowed_dependencies: "*_all_members" }',
+    );
     final g = loadPackageGraph(src, sourcePath: 'valid.yaml');
     expect(g.packages['app_config']!.allowsAllMembers, isTrue);
   });
 
   test('unknown kind is a format error', () {
-    expect(() => loadPackageGraph(fixture('unknown_kind.yaml'), sourcePath: 'x'),
-        throwsA(isA<GraphFormatException>()));
+    expect(
+      () => loadPackageGraph(fixture('unknown_kind.yaml'), sourcePath: 'x'),
+      throwsA(isA<GraphFormatException>()),
+    );
   });
 
   test('allowed dependency on unknown package is a format error', () {
-    expect(() => loadPackageGraph(fixture('dangling_dep.yaml'), sourcePath: 'x'),
-        throwsA(isA<GraphFormatException>()));
+    expect(
+      () => loadPackageGraph(fixture('dangling_dep.yaml'), sourcePath: 'x'),
+      throwsA(isA<GraphFormatException>()),
+    );
   });
 }

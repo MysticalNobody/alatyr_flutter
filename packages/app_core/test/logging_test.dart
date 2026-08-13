@@ -4,7 +4,12 @@ import 'package:test/test.dart';
 final class _RecordingLogger extends AppLogger {
   final List<String> lines = [];
   @override
-  void log(LogLevel level, String message, {Object? error, StackTrace? stackTrace}) {
+  void log(
+    LogLevel level,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) {
     lines.add('${level.name}: $message');
   }
 }

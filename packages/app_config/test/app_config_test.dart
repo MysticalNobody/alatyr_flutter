@@ -3,7 +3,10 @@ import 'package:test/test.dart';
 
 void main() {
   test('parse accepts valid env and https url', () {
-    final r = AppConfig.parse(env: 'staging', apiBaseUrl: 'https://api.example.com');
+    final r = AppConfig.parse(
+      env: 'staging',
+      apiBaseUrl: 'https://api.example.com',
+    );
     expect(r.isOk, isTrue);
     final config = r.valueOrNull!;
     expect(config.env, AppEnv.staging);
@@ -21,7 +24,10 @@ void main() {
   });
 
   test('parse rejects mailto scheme with stable code', () {
-    final r = AppConfig.parse(env: 'dev', apiBaseUrl: 'mailto:someone@example.com');
+    final r = AppConfig.parse(
+      env: 'dev',
+      apiBaseUrl: 'mailto:someone@example.com',
+    );
     expect(r.failureOrNull?.code, 'config.invalid-url');
   });
 
