@@ -1,0 +1,27 @@
+# THE machine-readable source of truth for architecture rules.
+# Semantics (spec section 6):
+#   - allowed_dependencies lists WORKSPACE MEMBERS only.
+#   - Third-party deps are governed solely by banned_packages below.
+#   - SDK deps (flutter, flutter_test) are forbidden in pure_dart_packages.
+#   - Keys are package names; the app entry is renamed by tool/init.dart.
+package_kinds: [base, feature_api, feature_impl, app_root]
+
+banned_packages:
+  get_it: "manual constructor DI (spec section 5)"
+  injectable: "manual constructor DI (spec section 5)"
+  riverpod: "bloc is the canonical state management"
+  flutter_riverpod: "bloc is the canonical state management"
+  provider: "bloc is the canonical state management"
+  get: "bloc is the canonical state management"
+  mobx: "bloc is the canonical state management"
+  auto_route: "go_router is the canonical navigation"
+  hive: "drift is the canonical local database"
+  isar: "drift is the canonical local database"
+  built_value: "freezed is the canonical codegen model library"
+  mockito: "mocktail is the canonical test-double library (no codegen mocks)"
+
+pure_dart_packages: [app_core, app_config]
+
+packages:
+  app_core:   { kind: base, allowed_dependencies: [] }
+  app_config: { kind: base, allowed_dependencies: [app_core] }
