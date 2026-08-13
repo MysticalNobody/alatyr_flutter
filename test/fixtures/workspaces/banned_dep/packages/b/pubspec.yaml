@@ -1,0 +1,8 @@
+name: b
+publish_to: none
+resolution: workspace
+environment: { sdk: ^3.10.0 }
+dependencies:
+  get_it: ^8.0.0
+dev_dependencies:
+  mockito: ^5.0.0

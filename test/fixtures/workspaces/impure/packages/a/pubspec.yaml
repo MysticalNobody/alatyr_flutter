@@ -1,0 +1,6 @@
+name: a
+publish_to: none
+resolution: workspace
+environment: { sdk: ^3.10.0 }
+dependencies:
+  flutter: { sdk: flutter }
