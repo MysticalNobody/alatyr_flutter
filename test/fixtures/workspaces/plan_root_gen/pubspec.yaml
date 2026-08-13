@@ -1,0 +1,11 @@
+name: plan_root_gen_workspace
+publish_to: none
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+workspace:
+  - packages/gen
+
+dev_dependencies:
+  build_runner: any

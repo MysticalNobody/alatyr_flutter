@@ -17,4 +17,17 @@ void main() {
   test('codegen plan lists only build_runner packages', () {
     expect(buildCodegenPlan(root), ['packages/gen']);
   });
+
+  group('plan_root_gen fixture', () {
+    final rootWithGen = p.join(
+      'test',
+      'fixtures',
+      'workspaces',
+      'plan_root_gen',
+    );
+
+    test('codegen plan includes root if it declares build_runner', () {
+      expect(buildCodegenPlan(rootWithGen), ['.', 'packages/gen']);
+    });
+  });
 }
