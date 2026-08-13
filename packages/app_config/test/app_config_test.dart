@@ -20,6 +20,16 @@ void main() {
     expect(r.failureOrNull?.code, 'config.invalid-url');
   });
 
+  test('parse rejects mailto scheme with stable code', () {
+    final r = AppConfig.parse(env: 'dev', apiBaseUrl: 'mailto:someone@example.com');
+    expect(r.failureOrNull?.code, 'config.invalid-url');
+  });
+
+  test('parse rejects file scheme with stable code', () {
+    final r = AppConfig.parse(env: 'dev', apiBaseUrl: 'file:///etc/passwd');
+    expect(r.failureOrNull?.code, 'config.invalid-url');
+  });
+
   test('fromEnvironment falls back to dev + template.invalid', () {
     final config = AppConfig.fromEnvironment();
     expect(config.env, AppEnv.dev);

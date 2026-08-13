@@ -21,10 +21,10 @@ final class AppConfig {
       ));
     }
     final url = Uri.tryParse(apiBaseUrl);
-    if (url == null || !url.isAbsolute) {
+    if (url == null || !url.isAbsolute || (url.scheme != 'http' && url.scheme != 'https') || url.host.isEmpty) {
       return Err(AppFailure(
         code: 'config.invalid-url',
-        message: 'API_BASE_URL must be an absolute URL, got "$apiBaseUrl"',
+        message: 'API_BASE_URL must be an absolute http(s) URL, got "$apiBaseUrl"',
       ));
     }
     return Ok(AppConfig(env: parsedEnv, apiBaseUrl: url));
