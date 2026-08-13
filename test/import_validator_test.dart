@@ -36,6 +36,25 @@ import 'stub.dart'
 ''';
       expect(collectPackageImports(src), ['io_impl', 'web_impl']);
     });
+
+    test('keyword-shaped identifiers do not create phantom directives', () {
+      const src = '''
+enum TransferMode { import, export }
+Future<void> export(File f) async {}
+csvService.import('not/a/uri.dart');
+''';
+      expect(collectPackageImports(src), isEmpty);
+    });
+
+    test('a real directive after keyword-shaped identifiers is still '
+        'collected', () {
+      const src = '''
+enum TransferMode { import, export }
+Future<void> export(File f) async {}
+import 'package:good2/g.dart';
+''';
+      expect(collectPackageImports(src), ['good2']);
+    });
   });
 
   group('validateImports', () {
@@ -53,7 +72,12 @@ import 'stub.dart'
       );
     });
     test('boundary rule exempts test/, banned rule does not', () {
-      expect(v.join('\n'), isNot(contains('b_test.dart: import of member')));
+      expect(
+        v.join('\n'),
+        isNot(
+          matches(RegExp(r'b_boundary_check\.dart:\d+:\d+: import of member')),
+        ),
+      );
       expect(v.join('\n'), contains('get_it'));
     });
     test('secret-shaped identifier in data_local lib is reported', () {
@@ -62,6 +86,22 @@ import 'stub.dart'
         allOf(contains('dao.dart'), contains('data_secure')),
       );
     });
-    test('exact violation count', () => expect(v, hasLength(4)));
+    test('pure package importing flutter_bloc is reported', () {
+      expect(v.join('\n'), contains('flutter_bloc'));
+    });
+    test('pure package importing dart:ui_web is reported', () {
+      expect(v.join('\n'), contains('dart:ui_web'));
+    });
+    test('member missing from the graph still gets banned-package scanning, '
+        'plus a loud violation', () {
+      expect(
+        v.join('\n'),
+        contains('workspace member "orphan" is missing from the package graph'),
+      );
+      expect(v.join('\n'), contains('mockito'));
+    });
+    // 4 original (Task 6) + 2 (flutter_bloc, dart:ui_web pure-core widening)
+    // + 2 (orphan: missing-from-graph + banned mockito) = 8.
+    test('exact violation count', () => expect(v, hasLength(8)));
   });
 }

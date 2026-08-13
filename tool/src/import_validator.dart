@@ -94,6 +94,26 @@ List<_Directive> _directives(String src) {
     return true;
   }
 
+  bool startsStringLiteral() => at("'") || at('"') || at("r'") || at('r"');
+
+  const whitespace = ' \t\r\n';
+
+  /// Skips insignificant tokens (whitespace and comments) so callers can
+  /// probe what "really" comes next in the source.
+  void skipWhitespaceAndComments() {
+    while (i < src.length) {
+      if (whitespace.contains(src[i])) {
+        advance();
+      } else if (at('//')) {
+        skipLineComment();
+      } else if (at('/*')) {
+        skipBlockComment();
+      } else {
+        break;
+      }
+    }
+  }
+
   while (i < src.length) {
     if (at('//')) {
       skipLineComment();
@@ -110,6 +130,18 @@ List<_Directive> _directives(String src) {
     if (atKeyword('import') || atKeyword('export')) {
       final dLine = line, dCol = col;
       advance(6); // both keywords are 6 chars
+      skipWhitespaceAndComments();
+      // `import`/`export` are built-in identifiers, not reserved words, so
+      // they're legal as enum members, method names, or method-call
+      // targets (`enum X { import, export }`, `Future<void> export() {}`,
+      // `service.import(path)`). A real directive is always immediately
+      // followed (module whitespace/comments) by its URI string literal;
+      // anything else means this was never a directive - abandon it
+      // without swallowing more source, and resume normal scanning right
+      // where we are (past the keyword, past any whitespace/comments).
+      if (!startsStringLiteral()) {
+        continue;
+      }
       final uris = <String>[];
       while (i < src.length && src[i] != ';') {
         if (at("'") || at('"') || at("r'") || at('r"')) {
@@ -159,8 +191,18 @@ List<String> validateImports({
   for (final entry in members.entries) {
     final name = entry.key;
     final node = graph.packages[name];
-    if (node == null) continue;
-    final isPure = graph.pureDartPackages.contains(name);
+    if (node == null) {
+      // Defense in depth: verify_dependencies.dart is the primary check for
+      // graph/workspace drift, but verify_imports.dart must not go silent
+      // on its own just because a member is missing from the graph - the
+      // banned-package scan below still runs for it, and this makes the
+      // gap loud rather than silently skipping every import rule.
+      violations.add(
+        '${entry.value}/pubspec.yaml:1:1: workspace member '
+        '"$name" is missing from the package graph',
+      );
+    }
+    final isPure = node != null && graph.pureDartPackages.contains(name);
     for (final scope in ['lib', 'test']) {
       final dir = Directory(p.join(rootDir, entry.value, scope));
       if (!dir.existsSync()) continue;
@@ -183,9 +225,13 @@ List<String> validateImports({
                 '"$pkg" - $banReason',
               );
             }
-            if (inLib &&
-                isPure &&
-                (pkg == 'flutter' || pkg == 'flutter_test')) {
+            if (node == null) {
+              // Without a graph node we have no allowed_dependencies edges
+              // and no purity classification to check against - the banned
+              // scan above (which needs neither) is all that applies.
+              continue;
+            }
+            if (inLib && isPure && pkg.startsWith('flutter')) {
               violations.add(
                 '$relPath:${d.line}:${d.col}: pure Dart package '
                 '"$name" imports "$pkg"',
@@ -203,8 +249,8 @@ List<String> validateImports({
               }
             }
           }
-          if (inLib && isPure) {
-            for (final uri in d.uris.where((u) => u == 'dart:ui')) {
+          if (node != null && inLib && isPure) {
+            for (final uri in d.uris.where((u) => u.startsWith('dart:ui'))) {
               violations.add(
                 '$relPath:${d.line}:${d.col}: pure Dart package '
                 '"$name" imports "$uri"',
