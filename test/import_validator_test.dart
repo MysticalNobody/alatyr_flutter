@@ -55,6 +55,54 @@ import 'package:good2/g.dart';
 ''';
       expect(collectPackageImports(src), ['good2']);
     });
+
+    test('adjacent string literals in a URI are concatenated', () {
+      // Dart concatenates adjacent string literals into one string, and
+      // that applies inside import/export URIs too - this is valid Dart
+      // (verified: `import 'dart:' 'math';` analyzes and runs), and
+      // treating the two literals as separate URIs would hide the real
+      // target package ("get_it") from every rule that reads it.
+      const src = '''
+import 'package:' 'get_it/x.dart';
+''';
+      expect(collectPackageImports(src), ['get_it']);
+    });
+
+    test('a `;` inside a comment inside a directive does not terminate it', () {
+      const src = '''
+import 'stub.dart' // note;
+    if (dart.library.io) 'package:get_it/g.dart';
+''';
+      expect(collectPackageImports(src), ['get_it']);
+    });
+
+    test("a conditional directive's comparison value is not collected as a "
+        'URI', () {
+      // The dotted-name comparison value looks exactly like a package
+      // URI, but it's a comparison operand, not an import - only the
+      // string AFTER the closing paren is the conditional URI.
+      const src = '''
+import 'stub.dart'
+    if (custom.value == 'package:get_it/x.dart') 'package:impl/impl.dart';
+''';
+      final packages = collectPackageImports(src);
+      expect(packages, isNot(contains('get_it')));
+      expect(packages, ['impl']);
+    });
+
+    test('interpolation inside a string does not desync the scanner', () {
+      // `${m['k']}` nests a single-quoted string inside a single-quoted
+      // outer string. A scanner that isn't interpolation-aware stops at
+      // the inner `'`, mistaking it for the outer string's terminator,
+      // and then misreads the remaining literal text - including the
+      // fake `import "package:evil/evil.dart";` still inside the string -
+      // as real top-level source.
+      const src = r'''
+const s = 'before ${m['k']} import "package:evil/evil.dart"; after';
+import 'package:good3/g.dart';
+''';
+      expect(collectPackageImports(src), ['good3']);
+    });
   });
 
   group('validateImports', () {

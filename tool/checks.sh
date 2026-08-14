@@ -32,7 +32,8 @@ trap cleanup EXIT
 
 # Tracked+staged diff plus content hashes of untracked files. Lets the
 # freshness guard work in a dirty tree: only deltas introduced BY the gate
-# (stale codegen) fail it; pre-existing edits pass through unchanged.
+# (stale codegen, or an unresolved pubspec.lock) fail it; pre-existing edits
+# pass through unchanged.
 snapshot_worktree() {
   git diff --binary -- .
   git diff --cached --binary -- .
@@ -59,6 +60,27 @@ analyze_and_test() { # <runner> <dir> <hasTests>
     fi )
 }
 
+# Captured before ANY dart/flutter command runs (full tier only): the very
+# first `dart run` below implicitly resolves pubspec dependencies and can
+# rewrite pubspec.lock. Snapshotting after that point - as this script used
+# to - would fold an unresolved-lockfile drift into "before", so the
+# after-codegen comparison never sees it and a PR that edits a pubspec
+# without updating the committed lock passes green. `dart format` writes
+# nothing, but every stage from here on may resolve, so the snapshot has to
+# lead all of them.
+before_snapshot=""
+if [[ "$MODE" == "full" ]]; then
+  if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    before_snapshot="$(mktemp)"; temporary_files+=("$before_snapshot")
+    snapshot_worktree >"$before_snapshot"
+  elif is_ci; then
+    echo "FATAL: not a git worktree - codegen/lockfile freshness cannot be checked in CI" >&2
+    exit 1
+  else
+    echo "WARNING: not a git worktree - codegen/lockfile freshness check SKIPPED" >&2
+  fi
+fi
+
 echo "==> Formatting"
 run_dart format --output=none --set-exit-if-changed .
 
@@ -78,17 +100,6 @@ if [[ "$MODE" == "package" ]]; then
   echo "OK (package $TARGET)"; exit 0
 fi
 
-before_snapshot=""
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  before_snapshot="$(mktemp)"; temporary_files+=("$before_snapshot")
-  snapshot_worktree >"$before_snapshot"
-elif is_ci; then
-  echo "FATAL: not a git worktree - codegen freshness cannot be checked in CI" >&2
-  exit 1
-else
-  echo "WARNING: not a git worktree - codegen freshness check SKIPPED" >&2
-fi
-
 echo "==> Codegen (freshness check)"
 bash "$ROOT_DIR/tool/codegen.sh"
 
@@ -96,7 +107,8 @@ if [[ -n "$before_snapshot" ]]; then
   after_snapshot="$(mktemp)"; temporary_files+=("$after_snapshot")
   snapshot_worktree >"$after_snapshot"
   if ! cmp -s "$before_snapshot" "$after_snapshot"; then
-    echo "Generated artifacts are stale (codegen changed the tree):" >&2
+    echo "Generated artifacts are stale, or pubspec.lock does not match the" >&2
+    echo "resolved dependencies (commit the regenerated lock):" >&2
     git status --short -- . >&2
     exit 1
   fi

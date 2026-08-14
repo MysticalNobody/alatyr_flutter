@@ -63,8 +63,22 @@ List<_Directive> _directives(String src) {
     }
   }
 
-  /// Consumes a string literal, returns its contents (null for interpolated
-  /// complexity we don't need - directive URIs are always simple).
+  bool startsStringLiteral() => at("'") || at('"') || at("r'") || at('r"');
+
+  /// Consumes a string literal, returns its contents (raw text between the
+  /// quotes; escapes untouched - directive URIs never need unescaping).
+  ///
+  /// Interpolation-aware for non-raw strings: an unescaped `${` opens a
+  /// balanced-brace region that is skipped by recursing into this same
+  /// function for every string literal found inside it (self-recursion,
+  /// not mutual recursion with a sibling helper - Dart requires local
+  /// functions to be declared before use, which a separately-named
+  /// interpolation helper calling back into `readString` cannot satisfy).
+  /// This means a same-quote string inside the interpolation - e.g.
+  /// `"${map['k']}"` - can't be mistaken for the outer string's terminator
+  /// and desync the scanner into the following source. Bare `$identifier`
+  /// interpolation needs no special handling: identifiers can't contain
+  /// quote characters, so the plain char-by-char scan already handles it.
   String? readString() {
     final raw = at('r');
     if (raw) advance();
@@ -73,8 +87,30 @@ List<_Directive> _directives(String src) {
         advance(quote.length);
         final start = i;
         while (i < src.length && !at(quote)) {
-          if (!raw && src[i] == r'\') advance();
-          advance();
+          if (!raw && at(r'${')) {
+            advance(2); // '${'
+            var depth = 1;
+            while (i < src.length && depth > 0) {
+              if (startsStringLiteral()) {
+                readString();
+              } else if (at('//')) {
+                skipLineComment();
+              } else if (at('/*')) {
+                skipBlockComment();
+              } else if (at('{')) {
+                depth++;
+                advance();
+              } else if (at('}')) {
+                depth--;
+                advance();
+              } else {
+                advance();
+              }
+            }
+          } else {
+            if (!raw && src[i] == r'\') advance();
+            advance();
+          }
         }
         final value = src.substring(start, i);
         advance(quote.length);
@@ -82,6 +118,34 @@ List<_Directive> _directives(String src) {
       }
     }
     return null;
+  }
+
+  /// Skips a parenthesized group ([i] is at the opening `(`) without
+  /// collecting any string literal inside it as a directive URI - used for
+  /// a conditional directive's `if (...)` clause, whose dotted-name
+  /// comparison may itself hold a string that looks like a package URI
+  /// (`if (custom.value == 'package:get_it/x.dart')`) but is a comparison
+  /// value, not an import.
+  void skipParenthesized() {
+    advance(); // '('
+    var depth = 1;
+    while (i < src.length && depth > 0) {
+      if (startsStringLiteral()) {
+        readString();
+      } else if (at('//')) {
+        skipLineComment();
+      } else if (at('/*')) {
+        skipBlockComment();
+      } else if (at('(')) {
+        depth++;
+        advance();
+      } else if (at(')')) {
+        depth--;
+        advance();
+      } else {
+        advance();
+      }
+    }
   }
 
   bool atKeyword(String kw) {
@@ -94,12 +158,13 @@ List<_Directive> _directives(String src) {
     return true;
   }
 
-  bool startsStringLiteral() => at("'") || at('"') || at("r'") || at('r"');
-
   const whitespace = ' \t\r\n';
 
   /// Skips insignificant tokens (whitespace and comments) so callers can
-  /// probe what "really" comes next in the source.
+  /// probe what "really" comes next in the source. A `;` (or anything
+  /// else) inside a comment is never mistaken for a directive terminator,
+  /// because the comment is skipped as one unit here, not scanned
+  /// char-by-char by the directive-body loop.
   void skipWhitespaceAndComments() {
     while (i < src.length) {
       if (whitespace.contains(src[i])) {
@@ -114,6 +179,24 @@ List<_Directive> _directives(String src) {
     }
   }
 
+  /// Reads one URI: a string literal plus any further string literals
+  /// immediately adjacent to it (separated only by whitespace/comments).
+  /// Dart concatenates adjacent string literals into a single string, and
+  /// import/export URIs are no exception - `import 'package:' 'x/x.dart';`
+  /// is one URI, not two, and treating them as separate URIs would hide
+  /// the real target package from every rule that reads it. Returns null
+  /// if [i] isn't at a string literal.
+  String? readUri() {
+    if (!startsStringLiteral()) return null;
+    final buffer = StringBuffer(readString() ?? '');
+    while (true) {
+      skipWhitespaceAndComments();
+      if (!startsStringLiteral()) break;
+      buffer.write(readString() ?? '');
+    }
+    return buffer.toString();
+  }
+
   while (i < src.length) {
     if (at('//')) {
       skipLineComment();
@@ -123,7 +206,7 @@ List<_Directive> _directives(String src) {
       skipBlockComment();
       continue;
     }
-    if (at("'") || at('"') || at("r'") || at('r"')) {
+    if (startsStringLiteral()) {
       readString();
       continue;
     }
@@ -135,21 +218,36 @@ List<_Directive> _directives(String src) {
       // they're legal as enum members, method names, or method-call
       // targets (`enum X { import, export }`, `Future<void> export() {}`,
       // `service.import(path)`). A real directive is always immediately
-      // followed (module whitespace/comments) by its URI string literal;
+      // followed (modulo whitespace/comments) by its URI string literal;
       // anything else means this was never a directive - abandon it
       // without swallowing more source, and resume normal scanning right
       // where we are (past the keyword, past any whitespace/comments).
       if (!startsStringLiteral()) {
         continue;
       }
+      // Grammar: URI (`if '(' ... ')' URI)* (`as`/`show`/`hide` ...)? ';'.
+      // Only the primary URI and each post-condition URI are collected;
+      // everything else (the if-condition's own contents, `as`/`show`/
+      // `hide` clauses) is skipped without being mistaken for a URI.
       final uris = <String>[];
-      while (i < src.length && src[i] != ';') {
-        if (at("'") || at('"') || at("r'") || at('r"')) {
-          final uri = readString();
+      while (true) {
+        skipWhitespaceAndComments();
+        if (i >= src.length || at(';')) break;
+        if (atKeyword('if')) {
+          advance(2);
+          skipWhitespaceAndComments();
+          if (at('(')) skipParenthesized();
+          skipWhitespaceAndComments();
+          final uri = readUri();
           if (uri != null) uris.add(uri);
-        } else {
-          advance();
+          continue;
         }
+        if (startsStringLiteral()) {
+          final uri = readUri();
+          if (uri != null) uris.add(uri);
+          continue;
+        }
+        advance();
       }
       out.add(_Directive(dLine, dCol, uris));
       continue;
