@@ -3,3 +3,8 @@
 *.ru.md
 CLAUDE.local.md
 .DS_Store
+.dart_tool/
+build/
+pubspec.lock
+!/pubspec.lock
+.superpowers/

@@ -1,0 +1,3 @@
+class SessionDao {
+  String? authToken;
+}

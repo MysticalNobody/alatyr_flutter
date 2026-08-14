@@ -1,0 +1,10 @@
+name: app_config
+description: Typed application config from compile-time dart-defines.
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.12.0
+dependencies:
+  app_core: any   # workspace member; version governed by the workspace
+dev_dependencies:
+  test: ^1.25.0

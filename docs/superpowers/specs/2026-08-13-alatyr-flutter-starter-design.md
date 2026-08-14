@@ -1,7 +1,7 @@
 # Alatyr — Flutter Starter for AI-Agent Development: Design
 
 - **Date:** 2026-08-13
-- **Status:** Draft for final review (brainstorm complete, all sections approved individually)
+- **Status:** approved; implementation in progress (M1 done)
 - **Scheme:** Claude Code implements, OpenAI Codex cross-reviews
 
 ## 1. Purpose and constraints

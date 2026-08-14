@@ -1,0 +1,22 @@
+package_kinds: [base, feature_api, feature_impl, app_root]
+
+banned_packages:
+  get_it: "manual constructor DI (spec section 5)"
+  injectable: "manual constructor DI (spec section 5)"
+  riverpod: "bloc is the canonical state management"
+  flutter_riverpod: "bloc is the canonical state management"
+  provider: "bloc is the canonical state management"
+  get: "bloc is the canonical state management"
+  mobx: "bloc is the canonical state management"
+  auto_route: "go_router is the canonical navigation"
+  hive: "drift is the canonical local database"
+  isar: "drift is the canonical local database"
+  built_value: "freezed is the canonical codegen model library"
+  mockito: "mocktail is the canonical test-double library (no codegen mocks)"
+
+pure_dart_packages: [a, p]
+
+packages:
+  a: { kind: base, allowed_dependencies: [] }
+  p: { kind: base, allowed_dependencies: [b] }
+  b: { kind: base, allowed_dependencies: [] }

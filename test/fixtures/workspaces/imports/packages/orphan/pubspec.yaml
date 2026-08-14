@@ -1,0 +1,4 @@
+name: orphan
+publish_to: none
+resolution: workspace
+environment: { sdk: ^3.10.0 }
