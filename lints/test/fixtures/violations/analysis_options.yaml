@@ -1,0 +1,11 @@
+# Wires the plugin under test by RELATIVE path. This fixture lives 3
+# levels below the plugin package root both in the repo (lints/ ->
+# test/fixtures/violations/) and after integration_check.sh copies both
+# into a scratch dir preserving that geometry ($SCRATCH/alatyr_lints/ ->
+# test/fixtures/violations/) - so the same ../../.. resolves correctly in
+# both places. If this depth is ever wrong, every rule count silently drops
+# to 0 (the plugin fails to load) - the integration script's most
+# recognizable failure signature.
+plugins:
+  alatyr_lints:
+    path: ../../..

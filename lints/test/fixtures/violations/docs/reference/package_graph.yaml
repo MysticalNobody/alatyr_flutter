@@ -1,0 +1,16 @@
+# Mini package graph for the violations fixture ONLY. Not the real
+# docs/reference/package_graph.yaml - GraphLoader walks up from an
+# analyzed file to the FIRST directory containing this relative path, so
+# shipping a copy here makes this fixture tree its own self-contained
+# "repo root" instead of accidentally picking up the real graph above it.
+package_kinds: [base, feature_impl]
+
+banned_packages:
+  get_it: "manual constructor DI"
+
+pure_dart_packages: [pure_pkg]
+
+packages:
+  pure_pkg: { kind: base, allowed_dependencies: [] }
+  feat_a: { kind: feature_impl, allowed_dependencies: [] }
+  feat_b: { kind: feature_impl, allowed_dependencies: [] }

@@ -1,0 +1,11 @@
+name: violations_fixture
+description: >-
+  Standalone integration fixture for lints/test/integration_check.sh. Ships
+  its own docs/reference/package_graph.yaml so GraphLoader resolves this
+  directory as a repo root; every file here is engineered to fire exactly
+  one diagnostic from exactly one of the six alatyr_lints rules. Not part of
+  the workspace and never analyzed as part of it (see the plugin's
+  analysis_options.yaml exclude for test/fixtures/**).
+publish_to: none
+environment:
+  sdk: ^3.12.0
