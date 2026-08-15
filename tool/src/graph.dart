@@ -1,5 +1,7 @@
 import 'package:yaml/yaml.dart';
 
+// Mirrored by the tolerant IDE-side parser:
+// lints/lib/src/graph/package_graph.dart — keep schema changes in sync.
 const String allMembersSentinel = '*_all_members';
 
 final class GraphFormatException implements Exception {

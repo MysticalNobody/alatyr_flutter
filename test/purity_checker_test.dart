@@ -5,7 +5,7 @@ import '../tool/src/purity_checker.dart';
 // Canned `dart pub deps --json` fixtures, trimmed to the fields the checker
 // actually reads (name + kind + dependencies on each packages[] entry).
 // Shape verified against a real `fvm dart pub deps --json` run at the repo
-// root and against a real Flutter workspace (see task-7-report.md).
+// root and against a real Flutter workspace.
 
 const String _cleanJson = '''
 {

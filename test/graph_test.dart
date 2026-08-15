@@ -38,4 +38,15 @@ void main() {
       throwsA(isA<GraphFormatException>()),
     );
   });
+
+  test('pure_dart_packages listing unknown package is a format error', () {
+    final src = fixture('valid.yaml').replaceFirst(
+      'pure_dart_packages: [app_core, app_config]',
+      'pure_dart_packages: [ghost]',
+    );
+    expect(
+      () => loadPackageGraph(src, sourcePath: 'valid.yaml'),
+      throwsA(isA<GraphFormatException>()),
+    );
+  });
 }

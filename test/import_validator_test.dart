@@ -148,8 +148,8 @@ import 'package:good3/g.dart';
       );
       expect(v.join('\n'), contains('mockito'));
     });
-    // 4 original (Task 6) + 2 (flutter_bloc, dart:ui_web pure-core widening)
-    // + 2 (orphan: missing-from-graph + banned mockito) = 8.
+    // 4 original violation cases + 2 (flutter_bloc, dart:ui_web pure-core
+    // widening) + 2 (orphan: missing-from-graph + banned mockito) = 8.
     test('exact violation count', () => expect(v, hasLength(8)));
   });
 }

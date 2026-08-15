@@ -67,8 +67,10 @@ pure_dart_packages:
 /// package (source files, `package_config.json`, `pubspec.yaml`) stays
 /// in-memory as the harness intends.
 ///
-/// See the Task 3 report for the alternatives considered and why this one
-/// was chosen over a physical-tempdir-plus-`dart analyze` fallback.
+/// Alternatives considered: mocking `GraphLoader` (less honest — it would
+/// hide the real disk-read path) and shelling out to a real `dart analyze`
+/// subprocess (slower, one spin-up per test); both were rejected in favor
+/// of this real-temp-dir approach.
 mixin _RealDiskGraphFixture on AnalysisRuleTest {
   late final Directory _tempDir;
 
