@@ -35,4 +35,20 @@ packages:
 ''';
     expect(PackageGraph.tryParse(malformedGraph), isNull);
   });
+
+  test('non-sentinel scalar allowed_dependencies returns null', () {
+    const malformedGraph = '''
+packages:
+  app_core: { kind: base, allowed_dependencies: banana }
+''';
+    expect(PackageGraph.tryParse(malformedGraph), isNull);
+  });
+
+  test('missing allowed_dependencies returns null', () {
+    const malformedGraph = '''
+packages:
+  app_core: { kind: base }
+''';
+    expect(PackageGraph.tryParse(malformedGraph), isNull);
+  });
 }

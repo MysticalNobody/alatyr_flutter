@@ -44,7 +44,7 @@ final class PackageGraph {
         } else if (deps is YamlList) {
           allowed[name] = [for (final d in deps) d.toString()];
         } else {
-          allowed[name] = const [];
+          return null;
         }
       }
       final banned = <String, String>{
