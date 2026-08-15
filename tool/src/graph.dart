@@ -66,14 +66,12 @@ PackageGraph loadPackageGraph(String yamlSource, {required String sourcePath}) {
     }
     final rawDeps = value['allowed_dependencies'];
     final allowsAll = rawDeps is String && rawDeps == allMembersSentinel;
-    final deps = allowsAll
-        ? const <String>[]
-        : rawDeps is YamlList
-        ? [for (final d in rawDeps) d.toString()]
-        : throw GraphFormatException(
-            '$sourcePath: packages.$name.allowed_dependencies must be a '
-            'list or "$allMembersSentinel"',
-          );
+    final deps = _parseAllowedDependencies(
+      rawDeps,
+      allowsAll: allowsAll,
+      name: name,
+      sourcePath: sourcePath,
+    );
     packages[name] = PackageNode(
       kind: kind,
       allowedDependencies: deps,
@@ -110,4 +108,20 @@ T _req<T>(YamlMap map, String key, String sourcePath) {
     throw GraphFormatException('$sourcePath: "$key" missing or wrong type');
   }
   return value;
+}
+
+List<String> _parseAllowedDependencies(
+  Object? rawDeps, {
+  required bool allowsAll,
+  required String name,
+  required String sourcePath,
+}) {
+  if (allowsAll) return const <String>[];
+  if (rawDeps is YamlList) {
+    return [for (final d in rawDeps) d.toString()];
+  }
+  throw GraphFormatException(
+    '$sourcePath: packages.$name.allowed_dependencies must be a '
+    'list or "$allMembersSentinel"',
+  );
 }

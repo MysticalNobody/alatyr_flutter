@@ -133,4 +133,18 @@ while IFS=$'\t' read -r runner dir has_tests; do
   analyze_and_test "$runner" "$dir" "$has_tests"
 done <<<"$plan"
 
+echo "==> Lint plugin (isolated analyze + unit tests)"
+( cd "$ROOT_DIR/lints"
+  run_dart pub get
+  run_dart analyze --fatal-infos .
+  run_dart test )
+
+echo "==> Lint plugin integration fixture"
+# Plugin hosts run in child processes with a hang history (see
+# lints/pubspec.yaml's analysis_server_plugin pin comment) - the
+# analyze/test calls above are already guarded via run_dart, but the
+# integration script drives its own standalone `dart analyze` outside that
+# wrapper, so it gets an explicit wall-clock guard here.
+run_guarded "$CHECKS_ANALYZE_TIMEOUT" bash "$ROOT_DIR/lints/test/integration_check.sh"
+
 echo "OK"
