@@ -7,6 +7,7 @@ import 'package:analyzer/error/error.dart';
 
 import '../graph/boundary_checker.dart';
 import '../graph/graph_loader.dart';
+import '../graph/package_graph.dart';
 import '../graph/path_resolver.dart';
 
 /// Flags Flutter/UI imports (`package:flutter*` or `dart:ui`) from packages
@@ -35,7 +36,9 @@ class PureCoreRule extends AnalysisRule {
     RuleContext context,
   ) {
     final visitor = _Visitor(this, context);
-    registry.addImportDirective(this, visitor);
+    registry
+      ..addImportDirective(this, visitor)
+      ..addExportDirective(this, visitor);
   }
 }
 
@@ -46,10 +49,15 @@ class _Visitor extends SimpleAstVisitor<void> {
   final RuleContext _context;
 
   @override
-  void visitImportDirective(ImportDirective node) {
-    final uri = node.uri.stringValue;
-    if (uri == null) return;
+  void visitImportDirective(ImportDirective node) => _checkDirective(node);
 
+  @override
+  void visitExportDirective(ExportDirective node) => _checkDirective(node);
+
+  // Checks the directive's own URI, plus every conditional-import/export
+  // branch's URI (`if (...) 'uri'`) — a Flutter/UI dependency taints core
+  // purity regardless of which branch a given platform selects.
+  void _checkDirective(NamespaceDirective node) {
     final graph = GraphLoader.instance.graphFor(
       _context.definingUnit.file.path,
     );
@@ -61,6 +69,30 @@ class _Visitor extends SimpleAstVisitor<void> {
     );
     if (fromKey == null) return;
 
+    _checkUri(
+      reportNode: node,
+      uri: node.uri.stringValue,
+      fromKey: fromKey,
+      graph: graph,
+    );
+    for (final configuration in node.configurations) {
+      _checkUri(
+        reportNode: configuration,
+        uri: configuration.uri.stringValue,
+        fromKey: fromKey,
+        graph: graph,
+      );
+    }
+  }
+
+  void _checkUri({
+    required AstNode reportNode,
+    required String? uri,
+    required String fromKey,
+    required PackageGraph graph,
+  }) {
+    if (uri == null) return;
+
     final violation = pureCoreViolation(
       fromKey: fromKey,
       importUri: uri,
@@ -68,6 +100,6 @@ class _Visitor extends SimpleAstVisitor<void> {
     );
     if (violation == null) return;
 
-    _rule.reportAtNode(node, arguments: [violation]);
+    _rule.reportAtNode(reportNode, arguments: [violation]);
   }
 }

@@ -7,6 +7,7 @@ import 'package:analyzer/error/error.dart';
 
 import '../graph/boundary_checker.dart';
 import '../graph/graph_loader.dart';
+import '../graph/package_graph.dart';
 
 /// Flags imports of packages listed under `banned_packages` in
 /// `docs/reference/package_graph.yaml`. Unlike the boundary and pure-core
@@ -34,7 +35,9 @@ class BannedDependencyRule extends AnalysisRule {
     RuleContext context,
   ) {
     final visitor = _Visitor(this, context);
-    registry.addImportDirective(this, visitor);
+    registry
+      ..addImportDirective(this, visitor)
+      ..addExportDirective(this, visitor);
   }
 }
 
@@ -45,14 +48,36 @@ class _Visitor extends SimpleAstVisitor<void> {
   final RuleContext _context;
 
   @override
-  void visitImportDirective(ImportDirective node) {
-    final uri = node.uri.stringValue;
-    if (uri == null) return;
+  void visitImportDirective(ImportDirective node) => _checkDirective(node);
 
+  @override
+  void visitExportDirective(ExportDirective node) => _checkDirective(node);
+
+  // Checks the directive's own URI, plus every conditional-import/export
+  // branch's URI (`if (...) 'uri'`) — a banned dependency is banned
+  // regardless of which branch a given platform ends up selecting.
+  void _checkDirective(NamespaceDirective node) {
     final graph = GraphLoader.instance.graphFor(
       _context.definingUnit.file.path,
     );
     if (graph == null) return;
+
+    _checkUri(reportNode: node, uri: node.uri.stringValue, graph: graph);
+    for (final configuration in node.configurations) {
+      _checkUri(
+        reportNode: configuration,
+        uri: configuration.uri.stringValue,
+        graph: graph,
+      );
+    }
+  }
+
+  void _checkUri({
+    required AstNode reportNode,
+    required String? uri,
+    required PackageGraph graph,
+  }) {
+    if (uri == null) return;
 
     final importedPackage = packageNameFromUri(uri);
     if (importedPackage == null) return;
@@ -63,6 +88,6 @@ class _Visitor extends SimpleAstVisitor<void> {
     );
     if (violation == null) return;
 
-    _rule.reportAtNode(node, arguments: [violation]);
+    _rule.reportAtNode(reportNode, arguments: [violation]);
   }
 }

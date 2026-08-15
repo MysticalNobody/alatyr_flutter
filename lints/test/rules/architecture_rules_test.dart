@@ -148,6 +148,29 @@ import 'package:foo_api/foo_api.dart';
 import 'dart:convert';
 ''');
   }
+
+  Future<void> test_bannedExport_firesWithReason() async {
+    await assertDiagnostics(
+      r'''
+export 'package:banned_pkg/banned_pkg.dart';
+''',
+      [
+        lint(0, 44, messageContainsAll: ['banned_pkg', 'no ADR on file']),
+      ],
+    );
+  }
+
+  Future<void> test_conditionalImportBannedBranch_fires() async {
+    await assertDiagnostics(
+      r'''
+import 'package:foo_api/foo_api.dart'
+    if (dart.library.io) 'package:banned_pkg/banned_pkg.dart';
+''',
+      [
+        lint(42, 57, messageContainsAll: ['banned_pkg', 'no ADR on file']),
+      ],
+    );
+  }
 }
 
 @reflectiveTest
@@ -180,6 +203,23 @@ import 'package:bar_impl/bar_impl.dart';
   Future<void> test_apiImport_passes() async {
     await assertNoDiagnostics(r'''
 import 'package:foo_api/foo_api.dart';
+''');
+  }
+
+  Future<void> test_implToImplExport_fires() async {
+    await assertDiagnostics(
+      r'''
+export 'package:bar_impl/bar_impl.dart';
+''',
+      [
+        lint(0, 40, messageContainsAll: ['boundary', 'pkg', 'bar_impl']),
+      ],
+    );
+  }
+
+  Future<void> test_reexportAllowedApi_passes() async {
+    await assertNoDiagnostics(r'''
+export 'package:foo_api/foo_api.dart';
 ''');
   }
 }
@@ -241,6 +281,17 @@ import 'package:flutter/material.dart';
     await assertNoDiagnostics(r'''
 import 'package:foo_api/foo_api.dart';
 ''');
+  }
+
+  Future<void> test_flutterExport_firesFromPurePackage() async {
+    await assertDiagnostics(
+      r'''
+export 'package:flutter/material.dart';
+''',
+      [
+        lint(0, 39, messageContainsAll: ['purity', 'pkg', 'flutter']),
+      ],
+    );
   }
 }
 
