@@ -2,10 +2,11 @@
 # THE quality gate. Tiers:
 #   --fast            format + graph + imports (~seconds, agent inner loop)
 #   (default: full)   fast + codegen freshness + toolchain analyze/test
-#                     + per-package analyze/test
+#                     + per-package analyze/test + lint-plugin
+#                     analyze/test/integration fixture
 #   --package <path>  fast tier + targeted analyze+test for one workspace
 #                     member
-# M2 appends lint-plugin stages; M5 appends the critical-flows check.
+# M5 appends the critical-flows check.
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tool/common.sh"
