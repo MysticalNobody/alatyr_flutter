@@ -3,17 +3,6 @@
 Obligations that survived M1's final review and the post-review Codex round.
 The M2 and M3 plans MUST pick these up; delete entries as they land.
 
-## M2 (lint plugin + gate evolution)
-
-- **Resolution-based purity check** (Codex P2, accepted as design work): a pure
-  package declaring a Flutter *plugin* whose name does not start with `flutter`
-  (e.g. `shared_preferences`) passes both name-based checks today. Determine
-  Flutter dependence from resolved package metadata
-  (`.dart_tool/package_config.json` closure), not package spelling.
-- Fold the lint-plugin stages into `checks.sh` (planned M2 seam).
-- Opportunistic: fixture for the `pure_dart_packages`-lists-unknown-package
-  loader branch (currently code-only coverage).
-
 ## M3 (example slice) tripwires
 
 - Wrap `build_runner` invocations in a `CHECKS_CODEGEN_TIMEOUT` guard
@@ -22,6 +11,9 @@ The M2 and M3 plans MUST pick these up; delete entries as they land.
   app shell lands (banned-package rule currently sees only `lib/` + `test/`).
 - Extend `analysis_options.yaml` excludes for any new unresolvable fixture
   trees.
+- Anchor lints' `graphKeyForPath` at the GraphLoader-discovered root
+  (left-to-right scan misattributes on pathological clone paths); spec §6
+  already touched up in M2 final fixes.
 
 ## Recorded as accepted (no action planned)
 
@@ -30,3 +22,5 @@ The M2 and M3 plans MUST pick these up; delete entries as they land.
   branch reviews.
 - Lexer: no explicit recursion cap on interpolation nesting (bounded by real
   source shape); malformed-paren directive bodies degrade to EOF-bounded scan.
+- `sdk#63787`: one-shot `flutter analyze` may miss plugin diagnostics -
+  scanners are the floor (documented in `checks.sh` comment).

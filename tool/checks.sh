@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 # THE quality gate. Tiers:
 #   --fast            format + graph + imports (~seconds, agent inner loop)
-#   (default: full)   fast + codegen freshness + toolchain analyze/test
-#                     + per-package analyze/test
+#   (default: full)   fast + codegen freshness + transitive purity
+#                     (resolved graph) + toolchain analyze/test
+#                     + per-package analyze/test + lint-plugin
+#                     analyze/test/integration fixture
 #   --package <path>  fast tier + targeted analyze+test for one workspace
 #                     member
-# M2 appends lint-plugin stages; M5 appends the critical-flows check.
+# M5 appends the critical-flows check.
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tool/common.sh"
@@ -52,6 +54,11 @@ analyze_and_test() { # <runner> <dir> <hasTests>
   # would fail the whole gate on a test-less member with no error message.
   ( cd "$ROOT_DIR/$dir"
     if [[ "$runner" == "flutter" ]]; then
+      # Known upstream caveat sdk#63787: a one-shot `flutter analyze` run may
+      # miss lint-plugin diagnostics that a warm analysis server would catch.
+      # Does not affect gate correctness - the deterministic scanners
+      # (verify_imports.dart, verify_purity.dart, verify_dependencies.dart)
+      # are the enforcement floor; the plugin is IDE-time assistance on top.
       run_flutter analyze --no-pub --fatal-infos
       if [[ "$has_tests" == "true" ]]; then run_flutter test --no-pub; fi
     else
@@ -114,6 +121,9 @@ if [[ -n "$before_snapshot" ]]; then
   fi
 fi
 
+echo "==> Transitive purity (resolved graph)"
+run_dart run tool/verify_purity.dart
+
 echo "==> Toolchain analyze (root)"
 run_dart analyze --fatal-infos .
 
@@ -132,5 +142,19 @@ plan="$(run_dart run tool/checks_workspace.dart)"
 while IFS=$'\t' read -r runner dir has_tests; do
   analyze_and_test "$runner" "$dir" "$has_tests"
 done <<<"$plan"
+
+echo "==> Lint plugin (isolated analyze + unit tests)"
+( cd "$ROOT_DIR/lints"
+  run_dart pub get
+  run_dart analyze --fatal-infos .
+  run_dart test )
+
+echo "==> Lint plugin integration fixture"
+# Plugin hosts run in child processes with a hang history (see
+# lints/pubspec.yaml's analysis_server_plugin pin comment) - the
+# analyze/test calls above are already guarded via run_dart, but the
+# integration script drives its own standalone `dart analyze` outside that
+# wrapper, so it gets an explicit wall-clock guard here.
+run_guarded "$CHECKS_ANALYZE_TIMEOUT" bash "$ROOT_DIR/lints/test/integration_check.sh"
 
 echo "OK"

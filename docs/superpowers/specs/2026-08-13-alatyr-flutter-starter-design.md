@@ -1,7 +1,7 @@
 # Alatyr — Flutter Starter for AI-Agent Development: Design
 
 - **Date:** 2026-08-13
-- **Status:** approved; implementation in progress (M1 done)
+- **Status:** approved; implementation in progress (M2 done)
 - **Scheme:** Claude Code implements, OpenAI Codex cross-reviews
 
 ## 1. Purpose and constraints
@@ -318,8 +318,9 @@ every graph entry exists on disk).
 3. `lints/` — first-party analyzer plugin for IDE-time feedback: the same
    graph rules (`alatyr_boundary_import`, `alatyr_banned_dependency`,
    `alatyr_pure_core`) plus style rules (`alatyr_one_widget_per_file`,
-   `alatyr_no_widget_returning_function`, `alatyr_no_nested_ternary`; test
-   files exempt). Three design decisions carried from the proven original:
+   `alatyr_no_widget_returning_function`, `alatyr_no_nested_ternary`; the two
+   widget rules are test-file exempt, nested-ternary is not). Three design
+   decisions carried from the proven original:
    pure decision logic split from AST adapters (unit tests < 1 s); the plugin
    is **not** a workspace member (its analyzer pins never constrain the app's
    codegen stack); an in-repo violations fixture with an integration check
@@ -337,8 +338,9 @@ every graph entry exists on disk).
   of a dirty developer tree) → **toolchain tests** (`dart test` at the
   workspace root, under `run_guarded` — the fixture tests for init, both
   validators, the lexer, the plan builder, the e2e config parser; the
-  verifiers are themselves gated) → per-package analyze+test from a plan
-  derived from the root `workspace:` list (`flutter analyze --no-pub
+  verifiers are themselves gated) → transitive purity over the resolved graph
+  (dart pub deps closure of pure packages) → per-package analyze+test from a
+  plan derived from the root `workspace:` list (`flutter analyze --no-pub
   --fatal-infos` / `flutter test --no-pub` after the single resolve;
   `dart analyze --fatal-infos` / `dart test` for pure packages) → lints
   plugin isolated (pub get, analyze, test) → violations-fixture integration

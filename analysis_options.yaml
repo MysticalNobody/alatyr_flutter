@@ -1,11 +1,31 @@
+# NOTE: the analysis server only re-reads `plugins:` on restart - after
+# editing this key, restart the IDE's Dart analysis server (or any running
+# `dart analyze` daemon) or it keeps running without the plugin.
+plugins:
+  alatyr_lints:
+    path: ./lints
 analyzer:
   language:
     strict-casts: true
     strict-inference: true
     strict-raw-types: true
   exclude:
-    # Synthetic import-lexer fixtures under fake package names (a, b,
-    # data_local, get_it, flutter) that are deliberately unresolvable -
-    # scanned by the deterministic import validator's own lexer, not by
-    # the analyzer.
-    - test/fixtures/workspaces/imports/packages/**
+    # lints/ has its own analysis_options.yaml/pubspec.yaml and is analyzed
+    # standalone by the "Lint plugin" gate stage - keep it out of the root
+    # context so root analyze doesn't double-analyze the plugin's own
+    # sources under a different package config.
+    - lints/**
+    # Every fixture tree under test/fixtures/workspaces/ is scanner input,
+    # not analyzable Dart: most trees (banned_dep/, clean/, forbidden_edge/,
+    # graph_drift/, impure/) ship only pubspec.yaml/graph.yaml with no .dart
+    # files; plan/ and plan_root_gen/ ship trivial `void main() {}` test
+    # stubs; imports/packages/** ships synthetic import-lexer fixtures under
+    # fake package names (a, b, data_local, get_it, flutter) that are
+    # deliberately unresolvable - scanned by the deterministic import
+    # validator's own lexer, not by the analyzer. All are consumed by Dart
+    # test code that points directly at their paths (see
+    # test/import_validator_test.dart et al.), never by `dart analyze`, so
+    # excluding the whole tree wholesale - rather than tracking each new
+    # fixture subtree by hand - is the exclude that stays correct as
+    # fixtures are added.
+    - test/fixtures/workspaces/**

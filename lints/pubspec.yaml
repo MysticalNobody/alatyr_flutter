@@ -1,0 +1,18 @@
+name: alatyr_lints
+description: First-party analyzer plugin enforcing the Alatyr architecture.
+publish_to: none
+environment:
+  sdk: ^3.12.0
+# EXACT pin. The analysis server materializes plugins into a synthetic
+# package and runs its own `pub upgrade`; a lockfile cannot hold the
+# version, so the constraint IS the pin. 0.3.20 fixed the plugin-host
+# hang (dart-lang/sdk#63538) present in 0.3.15-0.3.19.
+dependencies:
+  analysis_server_plugin: 0.3.20
+  analyzer: ^14.1.0
+  path: ^1.9.0
+  yaml: ^3.1.2
+dev_dependencies:
+  analyzer_testing: ^0.3.4
+  test: ^1.25.0
+  test_reflective_loader: ^0.2.2
