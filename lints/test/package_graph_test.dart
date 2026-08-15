@@ -27,4 +27,12 @@ void main() {
     expect(PackageGraph.tryParse(': not yaml ::'), isNull);
     expect(PackageGraph.tryParse(''), isNull);
   });
+
+  test('missing kind returns null', () {
+    const malformedGraph = '''
+packages:
+  app_core: { allowed_dependencies: [] }
+''';
+    expect(PackageGraph.tryParse(malformedGraph), isNull);
+  });
 }

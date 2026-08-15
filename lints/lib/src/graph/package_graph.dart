@@ -35,6 +35,7 @@ final class PackageGraph {
         final name = entry.key.toString();
         final value = entry.value;
         if (value is! YamlMap) return null;
+        if (value['kind'] == null) return null;
         kinds[name] = value['kind'].toString();
         final deps = value['allowed_dependencies'];
         if (deps is String && deps == _allMembersSentinel) {

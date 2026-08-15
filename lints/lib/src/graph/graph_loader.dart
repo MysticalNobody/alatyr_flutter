@@ -24,9 +24,6 @@ final class GraphLoader {
   }
 
   String? _findRoot(String startDir) {
-    for (final known in _graphByRoot.keys) {
-      if (p.isWithin(known, startDir) || known == startDir) return known;
-    }
     var dir = startDir;
     for (var i = 0; i < 40; i++) {
       if (File(p.join(dir, _graphRelativePath)).existsSync()) return dir;
