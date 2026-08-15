@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # THE quality gate. Tiers:
 #   --fast            format + graph + imports (~seconds, agent inner loop)
-#   (default: full)   fast + codegen freshness + toolchain analyze/test
+#   (default: full)   fast + codegen freshness + transitive purity
+#                     (resolved graph) + toolchain analyze/test
 #                     + per-package analyze/test + lint-plugin
 #                     analyze/test/integration fixture
 #   --package <path>  fast tier + targeted analyze+test for one workspace
@@ -53,6 +54,11 @@ analyze_and_test() { # <runner> <dir> <hasTests>
   # would fail the whole gate on a test-less member with no error message.
   ( cd "$ROOT_DIR/$dir"
     if [[ "$runner" == "flutter" ]]; then
+      # Known upstream caveat sdk#63787: a one-shot `flutter analyze` run may
+      # miss lint-plugin diagnostics that a warm analysis server would catch.
+      # Does not affect gate correctness - the deterministic scanners
+      # (verify_imports.dart, verify_purity.dart, verify_dependencies.dart)
+      # are the enforcement floor; the plugin is IDE-time assistance on top.
       run_flutter analyze --no-pub --fatal-infos
       if [[ "$has_tests" == "true" ]]; then run_flutter test --no-pub; fi
     else
@@ -114,6 +120,9 @@ if [[ -n "$before_snapshot" ]]; then
     exit 1
   fi
 fi
+
+echo "==> Transitive purity (resolved graph)"
+run_dart run tool/verify_purity.dart
 
 echo "==> Toolchain analyze (root)"
 run_dart analyze --fatal-infos .

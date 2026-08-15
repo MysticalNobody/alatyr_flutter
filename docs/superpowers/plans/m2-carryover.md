@@ -5,14 +5,10 @@ The M2 and M3 plans MUST pick these up; delete entries as they land.
 
 ## M2 (lint plugin + gate evolution)
 
-- **Resolution-based purity check** (Codex P2, accepted as design work): a pure
-  package declaring a Flutter *plugin* whose name does not start with `flutter`
-  (e.g. `shared_preferences`) passes both name-based checks today. Determine
-  Flutter dependence from resolved package metadata
-  (`.dart_tool/package_config.json` closure), not package spelling.
-- Fold the lint-plugin stages into `checks.sh` (planned M2 seam).
 - Opportunistic: fixture for the `pure_dart_packages`-lists-unknown-package
   loader branch (currently code-only coverage).
+- `sdk#63787`: one-shot `flutter analyze` may miss plugin diagnostics -
+  scanners are the floor (documented in `checks.sh` comment).
 
 ## M3 (example slice) tripwires
 
