@@ -1,3 +1,9 @@
+# One analysis context for the whole workspace: the lint set, the strict
+# language modes and the alatyr_lints plugin below apply to every member and
+# to app/. Members MUST NOT ship their own analysis_options.yaml - a nested
+# file opens a separate context in which the root `plugins:` is silently
+# absent (and re-declaring it there is rejected: plugins_in_inner_options).
+include: package:flutter_lints/flutter.yaml
 # NOTE: the analysis server only re-reads `plugins:` on restart - after
 # editing this key, restart the IDE's Dart analysis server (or any running
 # `dart analyze` daemon) or it keeps running without the plugin.
@@ -29,3 +35,7 @@ analyzer:
     # fixture subtree by hand - is the exclude that stays correct as
     # fixtures are added.
     - test/fixtures/workspaces/**
+    # Build outputs (flutter run/build/test, build_runner -o) are not
+    # analyzable sources. NOT implicit: only dot-directories are skipped by
+    # the analyzer and the formatter; build/ is walked like any other dir.
+    - "**/build/**"
