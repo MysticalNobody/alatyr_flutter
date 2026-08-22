@@ -35,11 +35,13 @@ void main() {
         .whereType<File>()
         .where((f) => f.path.endsWith('.md'))
         .toList();
-    expect(rules.map((f) => f.uri.pathSegments.last).toSet(), {
-      'testing.md',
-      'widgets.md',
-      'codegen.md',
-    });
+    expect(
+      rules.map((f) => f.uri.pathSegments.last).toSet(),
+      containsAll(<String>['testing.md', 'widgets.md', 'codegen.md']),
+      reason:
+          'the three shipped rule files must stay; a project may add more - '
+          'the frontmatter loop below validates every file it finds',
+    );
     for (final rule in rules) {
       final lines = rule.readAsLinesSync();
       expect(lines.first, '---', reason: '${rule.path} has no frontmatter');
@@ -176,12 +178,27 @@ void main() {
           RegExp(r'^\s*\[profiles', multiLine: true).hasMatch(config),
           isFalse,
         );
-        expect(config, contains('review_model = "gpt-5.6-sol"'));
-        // The script reads the same pin, so the two cannot drift.
+        // Shape, not value: rotating the pin is a documented one-file edit
+        // (docs/workflow/maintenance.md), and it must not turn this suite red.
+        expect(
+          RegExp(r'^review_model = "[^"]+"$', multiLine: true).hasMatch(config),
+          isTrue,
+          reason:
+              'a non-empty review_model pin must exist in .codex/config.toml',
+        );
+        // The script reads that same file, so the two cannot drift.
         final script = File(
           '.claude/skills/cross-review/codex_review.sh',
         ).readAsStringSync();
-        expect(script, contains('review_model'));
+        final extractor = script
+            .split('\n')
+            .firstWhere((l) => l.startsWith('REVIEW_MODEL='), orElse: () => '');
+        expect(
+          extractor,
+          allOf(contains('.codex/config.toml'), contains('review_model')),
+          reason:
+              'codex_review.sh must extract the pin from .codex/config.toml',
+        );
       },
     );
 
@@ -222,6 +239,98 @@ void main() {
         );
       },
     );
+  });
+
+  // The dirty-tree guard and the exit-code contract, exercised for real:
+  // a throwaway git repo plus a stub `codex` on PATH (grepping the script's
+  // source text cannot show that the guard actually fires).
+  group('codex_review.sh preconditions (temp repo, stub codex)', () {
+    final script = File(
+      '.claude/skills/cross-review/codex_review.sh',
+    ).absolute.path;
+    late Directory tmp;
+    late String repo;
+    late Map<String, String> env;
+
+    void git(List<String> args) {
+      final r = Process.runSync(
+        'git',
+        args,
+        workingDirectory: repo,
+        environment: env,
+      );
+      expect(r.exitCode, 0, reason: '${args.join(' ')}: ${r.stderr}');
+    }
+
+    ProcessResult run(String base) => Process.runSync(
+      'bash',
+      [script, '--base', base, '--out', '${tmp.path}/out'],
+      workingDirectory: repo,
+      environment: env,
+    );
+
+    setUp(() {
+      tmp = Directory.systemTemp.createTempSync('codex_review');
+      repo = '${tmp.path}/repo';
+      final bin = Directory('${tmp.path}/bin')..createSync(recursive: true);
+      // Stub codex: `login status` succeeds, `exec ... -o FILE` writes FILE.
+      File('${bin.path}/codex').writeAsStringSync(
+        '#!/usr/bin/env bash\n'
+        r'[[ "$1" == "login" ]] && exit 0'
+        '\n'
+        r'while [[ $# -gt 0 ]]; do'
+        r' [[ "$1" == "-o" ]] && { echo stub > "$2"; exit 0; }; shift; done'
+        '\nexit 1\n',
+      );
+      Process.runSync('chmod', ['+x', '${bin.path}/codex']);
+      env = {
+        'PATH': '${bin.path}:${Platform.environment['PATH'] ?? ''}',
+        'GIT_AUTHOR_NAME': 'T',
+        'GIT_AUTHOR_EMAIL': 't@example.com',
+        'GIT_COMMITTER_NAME': 'T',
+        'GIT_COMMITTER_EMAIL': 't@example.com',
+      };
+      Directory('$repo/.codex').createSync(recursive: true);
+      File(
+        '$repo/.codex/config.toml',
+      ).writeAsStringSync('review_model = "stub-model"\n');
+      File('$repo/a.txt').writeAsStringSync('base\n');
+      git(['init', '-q']);
+      git(['add', '-A']);
+      git(['commit', '-qm', 'base']);
+      git(['branch', 'base-ref']);
+      File('$repo/b.txt').writeAsStringSync('head\n');
+      git(['add', '-A']);
+      git(['commit', '-qm', 'head']);
+    });
+
+    tearDown(() => tmp.deleteSync(recursive: true));
+
+    test('clean tree: exit 0 and the printed review file exists', () {
+      final r = run('base-ref');
+      expect(r.exitCode, 0, reason: '${r.stderr}');
+      expect(File((r.stdout as String).trim()).existsSync(), isTrue);
+    });
+
+    test('modified tracked file: exit 3, uncommitted', () {
+      File('$repo/a.txt').writeAsStringSync('dirty\n');
+      final r = run('base-ref');
+      expect(r.exitCode, 3);
+      expect(r.stderr, contains('uncommitted'));
+    });
+
+    test('untracked file: exit 3, uncommitted', () {
+      File('$repo/new.txt').writeAsStringSync('new\n');
+      final r = run('base-ref');
+      expect(r.exitCode, 3);
+      expect(r.stderr, contains('uncommitted'));
+    });
+
+    test('missing base ref: exit 3, does not exist', () {
+      final r = run('no-such-ref');
+      expect(r.exitCode, 3);
+      expect(r.stderr, contains('does not exist'));
+    });
   });
 
   group('adversarial harness', () {

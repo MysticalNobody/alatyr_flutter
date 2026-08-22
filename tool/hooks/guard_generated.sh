@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 # ONE hook script for BOTH agents (spec section 6): blocks hand edits of
 # generated Dart files (*.g.dart, *.freezed.dart, *.drift.dart).
+# Deletes (`*** Delete File:`) and renames onto a generated name
+# (`*** Move to:`) are blocked on purpose too: codegen recreates the file,
+# and a hand delete would only resurface as a red codegen-freshness stage.
 #
 # Payloads (captured in the M4 research pass):
 #   Claude Code PreToolUse, matcher Edit|Write:

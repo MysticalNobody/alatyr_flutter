@@ -19,17 +19,29 @@ Codex gives input; you evaluate every point against the code.
 If the user passed arguments (`$ARGUMENTS`, e.g. `--base develop --structured`),
 use them instead of `--base main`.
 
-The script does the pre-flight (codex installed and logged in, base ref
-exists, diff non-empty), forces the reviewer role (read-only sandbox,
-ephemeral, high effort, user skills off) and prints the output path:
-`review.txt` (native reviewer, applies `## Code Review Rules` from
+**Commit first:** the script diffs committed HEAD against the base and
+refuses a dirty tree (uncommitted or untracked files) with exit 3 - commit
+and re-run.
+
+The script does the pre-flight (clean tree, codex installed and logged in,
+base ref exists, diff non-empty), forces the reviewer role (read-only
+sandbox, ephemeral, high effort, user skills off) and prints the output
+path: `review.txt` (native reviewer, applies `## Code Review Rules` from
 AGENTS.md) or, with `--structured`, `review.json` matching
 `.codex/review-schema.json`. Reviews take 1–5 minutes: run with a Bash
 timeout of 600000 ms; never background it.
 
-**Exit 3 = review not performed.** Quote the script's stderr reason in your
-report under Remaining risks and stop; never invent findings. The human
-waives DoD 4 explicitly if the review is impossible - you do not.
+**Exit 3 = review not performed** - two kinds, handled differently:
+
+- **Recoverable:** "uncommitted changes in the working tree". Commit the
+  work, then run the script again. This is not a waiver case.
+- **Honest failure:** codex not installed, not logged in, the pinned model
+  rejected, base ref missing, no changes vs the base. Stop, quote the
+  script's stderr reason verbatim in your report under Remaining risks,
+  and never invent findings. The human waives DoD 4 explicitly - you do
+  not.
+
+Exit 2 is a usage error in your own invocation - fix the arguments.
 
 ## 2. Evaluate, don't obey
 

@@ -143,13 +143,20 @@ void main() {
     },
   );
 
-  test('no shipped (tracked) file contains Cyrillic', () {
-    final tracked =
-        (Process.runSync('git', ['ls-files', '-z']).stdout as String)
+  test('no shipped (tracked or untracked) file contains Cyrillic', () {
+    Iterable<String> lsFiles(List<String> args) =>
+        (Process.runSync('git', ['ls-files', ...args]).stdout as String)
             .split('\u0000')
             .where((s) => s.isNotEmpty);
+    // Untracked-but-not-ignored files are scanned too: a brand-new file with
+    // Russian text must fail the local gate, not only CI after it lands.
+    // Gitignored paths (the `*.ru.md` twins, CLAUDE.local.md) stay excluded.
+    final candidates = [
+      ...lsFiles(['-z']),
+      ...lsFiles(['--others', '--exclude-standard', '-z']),
+    ];
     final hits = <String>[];
-    for (final path in tracked) {
+    for (final path in candidates) {
       final file = File(path);
       if (!file.existsSync()) continue;
       final bytes = file.readAsBytesSync();

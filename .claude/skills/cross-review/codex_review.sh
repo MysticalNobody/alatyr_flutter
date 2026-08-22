@@ -15,12 +15,16 @@
 set -euo pipefail
 
 BASE=main; STRUCTURED=false; OUT=""; DEFAULT_OUT=".superpowers/cross-review"
+usage() { echo "usage: codex_review.sh [--base <ref>] [--structured] [--out <dir>]" >&2; }
+# A missing value for --base/--out is a usage error (exit 2), not a bash
+# parameter-expansion abort (exit 1) - the exit-code contract above is what
+# the codex-reviewer agent and the Stop-hook sample branch on.
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --base) BASE="${2:?--base needs a ref}"; shift 2 ;;
+    --base) [[ $# -ge 2 ]] || { usage; exit 2; }; BASE="$2"; shift 2 ;;
     --structured) STRUCTURED=true; shift ;;
-    --out) OUT="${2:?--out needs a dir}"; shift 2 ;;
-    *) echo "usage: codex_review.sh [--base <ref>] [--structured] [--out <dir>]" >&2; exit 2 ;;
+    --out) [[ $# -ge 2 ]] || { usage; exit 2; }; OUT="$2"; shift 2 ;;
+    *) usage; exit 2 ;;
   esac
 done
 
@@ -39,12 +43,15 @@ git rev-parse --verify --quiet "$BASE" >/dev/null || { echo "review not performe
 # <ref> HEAD); an uncommitted tree would otherwise be silently dropped from
 # the reviewed scope with no signal to the caller, so fail loud instead
 # (task 8 cross-review, P1: "silently omit uncommitted changes"). Commit
-# first, then review - matches the skill's documented "AFTER the commit"
-# invocation. `git diff --quiet HEAD --` only sees tracked files (modified
-# or staged); untracked new files are invisible to it, so the guard also
-# checks `git ls-files --others --exclude-standard` (fix-round-1: the
-# tracked-only guard could still approve a stale subset that omits new,
-# never-`git add`-ed files).
+# first, then review - the clean-tree precondition is documented in
+# SKILL.md section 1 and in step 8 of docs/workflow/feature-workflow.md.
+# Unlike every other exit-3 reason above, this one is RECOVERABLE: commit
+# and re-run, do not report it as a review that could not be performed.
+# `git diff --quiet HEAD --` only sees tracked files (modified or staged);
+# untracked new files are invisible to it, so the guard also checks
+# `git ls-files --others --exclude-standard` (fix-round-1: the tracked-only
+# guard could still approve a stale subset that omits new, never-`git
+# add`-ed files).
 if ! git diff --quiet HEAD -- || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
   echo "review not performed: uncommitted changes in the working tree (tracked edits and/or untracked new files) - commit them first (cross-review reads committed HEAD only)" >&2
   exit 3

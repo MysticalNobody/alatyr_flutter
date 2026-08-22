@@ -117,6 +117,12 @@ void main() {
     },
   );
 
+  test('Codex apply_patch deleting a generated file is blocked', () async {
+    const patch =
+        '*** Begin Patch\n*** Delete File: lib/a.g.dart\n*** End Patch';
+    expect((await runGuard(codexPayload(patch))).exitCode, 2);
+  });
+
   test('Codex apply_patch on hand-written files only is allowed', () async {
     const patch =
         '*** Begin Patch\n*** Add File: demo.txt\n+hello\n*** Update File: lib/main.dart\n@@\n-a\n+b\n*** End Patch';

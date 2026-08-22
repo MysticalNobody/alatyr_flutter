@@ -58,7 +58,7 @@ constructs implementations (`app/lib/bootstrap/`) and assembles the router.
 | 4 | secret-leak scan over `data_local` (`verify_imports`) + `Read` deny on `.dart-defines/*.env` + the review rubric (full semantic tracking is review-owned — accepted gap) |
 | 5 | `tool/hooks/guard_generated.sh` in both agents + the codegen-freshness stage (cold rebuild) |
 | 6 | human graph-diff approval |
-| 7 | review rubric + patrol e2e (no lint rule yet — accepted gap) |
+| 7 | review rubric + patrol e2e (lands in M5; no lint rule yet — accepted gap) |
 | 8 | critical-flows registry check in the gate (lands in M5) + review rubric |
 
 ## 5. The graph-first feature ritual
