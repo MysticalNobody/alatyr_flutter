@@ -18,13 +18,36 @@ up in both and are tolerated; only what codegen itself changed fails it.
 ## `ci.yml` today
 
 - Trigger: pushes to `main`, and every pull request.
-- Runner: `ubuntu-latest`, `libsqlite3-dev` installed (drift's native
-  sqlite3 build needs it — standard drift practice).
+- Runner: `ubuntu-latest`. No apt step: sqlite3's Dart hook downloads a
+  sha-pinned prebuilt library from github.com at test time (see the
+  comment above the gate step in `ci.yml` itself and
+  `docs/workflow/getting-started.md`) — nothing needs to be installed by
+  the workflow for it.
 - Flutter: `subosito/flutter-action@v2` reading the version from
   `.fvmrc`, with its cache enabled.
 - One step after checkout and setup: `tool/checks.sh`. Nothing else — no
   separate lint step, no separate test step; the gate already runs both.
 - Timeout: 30 minutes for the whole job.
+
+## `template-smoke.yml` today
+
+Template-repo only: checkout, Flutter via `.fvmrc`, then
+`tool/template_smoke.sh "${{ runner.temp }}/fixture_app"` — copies the
+tree, runs `tool/init.dart` on the copy, then the full gate on the
+result. Triggers on pushes to `main`, every pull request, and
+`workflow_dispatch`; 40-minute timeout. Deleted by `init` itself (it has
+no meaning once a repo has been instantiated).
+
+## `e2e.yml` today — advisory
+
+PRs to main and `workflow_dispatch`; `tool/e2e.sh android` with the
+device spec read from `tool/e2e.yaml` through `tool/e2e_config.dart`
+(single source of truth — the workflow restates nothing). The job runs
+with `continue-on-error: true`, so a red run is reported on the PR but
+never blocks merge: hosted-runner Android-emulator viability (KVM
+availability, boot time, AVD cache correctness) has no track record yet
+(spec §15 risk 5). Flip it to required — drop `continue-on-error` — once
+it has been green on a handful of real PRs.
 
 ## Environment assumptions to verify on first real runs
 
@@ -35,18 +58,11 @@ up in both and are tolerated; only what codegen itself changed fails it.
   build hook. A cold CI runner therefore pays that network cost on its
   first cache-miss run; if `ci.yml` ever adds dependency caching, cache
   `.dart_tool/hooks_runner/` alongside `pubspec.lock`-keyed pub caches.
-- **KVM availability for e2e** — `e2e.yml` (lands in M5) needs a
-  hardware-accelerated Android emulator; GitHub-hosted `ubuntu` runners
-  expose KVM, but this must be confirmed empirically on the first real
-  `e2e.yml` run, not assumed from documentation.
-
-## What lands in M5
-
-- **`e2e.yml`** — PRs to main, `tool/e2e.sh android` with the committed
-  device spec (`tool/e2e.yaml`).
-- **`template-smoke.yml`** — template-repo only: copies the tree, runs
-  `tool/init.dart` on the copy, then the full gate on the result. Deleted
-  by `init` itself (it has no meaning once a repo has been instantiated).
+- **KVM availability for e2e** — `e2e.yml` needs a hardware-accelerated
+  Android emulator; GitHub-hosted `ubuntu` runners expose KVM, but this
+  must be confirmed empirically on the first real `e2e.yml` runs, not
+  assumed from documentation — which is exactly why the job stays
+  advisory (`continue-on-error: true`) until it has that track record.
 
 ## Documented, not shipped
 

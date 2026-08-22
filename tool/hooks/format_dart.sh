@@ -22,6 +22,7 @@ root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
 targets=()
 while IFS= read -r path; do
   [[ -z "$path" ]] && continue
+  [[ "$path" == *.dart ]] || continue
   [[ "$path" == *.g.dart || "$path" == *.freezed.dart || "$path" == *.drift.dart ]] && continue
   [[ "$path" = /* ]] || path="$root/$path"
   [[ -f "$path" ]] && targets+=("$path")

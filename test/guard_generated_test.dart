@@ -200,7 +200,10 @@ void main() {
         expect(await runFormat(gen.path), 0);
         expect(gen.readAsStringSync(), 'void main(){print( 1 );}\n');
         expect(await runFormat('${tmp.path}/missing.dart'), 0);
-        expect(await runFormat('${tmp.path}/notes.md'), 0);
+        final notes = File('${tmp.path}/notes.md')
+          ..writeAsStringSync('void main(){print( 1 );}\n');
+        expect(await runFormat(notes.path), 0);
+        expect(notes.readAsStringSync(), 'void main(){print( 1 );}\n');
       },
     );
 
