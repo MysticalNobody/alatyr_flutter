@@ -55,6 +55,16 @@ entries as they land.
 - `.claude/settings.json` permissions allow `tool/e2e.sh` ahead of its
   existence; M5 adds the script.
 
+- `test/harness_test.dart`'s temp-repo group (codex_review.sh preconditions)
+  inherits the developer's global git config; a `commit.gpgsign = true`
+  without a signer, a global `core.hooksPath` or an `init.templateDir` fails
+  its setUp. Harden before the template goes public: run those `git` calls
+  with `-c commit.gpgsign=false -c core.hooksPath=/dev/null` or set
+  `GIT_CONFIG_GLOBAL=/dev/null` in the test's env.
+- `codex_review.sh --base --structured` treats `--structured` as the ref
+  (exit 3 "does not exist") instead of usage exit 2; add `[[ $2 != --* ]]`
+  to the argument guard.
+
 ## Recorded as accepted (no action planned)
 
 - Carried from M1/M2 reviews: deferred minors triaged OK-TO-DEFER at the M1
