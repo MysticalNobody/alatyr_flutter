@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # THE quality gate. Tiers:
 #   --fast            format + graph + imports (~seconds, agent inner loop)
-#   (default: full)   fast + codegen freshness + transitive purity
+#   (default: full)   fast + codegen freshness (cold rebuild) + transitive purity
 #                     (resolved graph) + toolchain analyze/test
-#                     + per-package analyze/test + lint-plugin
+#                     + per-package dart-analyze/test + lint-plugin
 #                     analyze/test/integration fixture
 #   --package <path>  fast tier + targeted analyze+test for one workspace
 #                     member
@@ -53,17 +53,14 @@ analyze_and_test() { # <runner> <dir> <hasTests>
   # exit status (1) would become the subshell's exit status, and set -e
   # would fail the whole gate on a test-less member with no error message.
   ( cd "$ROOT_DIR/$dir"
-    if [[ "$runner" == "flutter" ]]; then
-      # Known upstream caveat sdk#63787: a one-shot `flutter analyze` run may
-      # miss lint-plugin diagnostics that a warm analysis server would catch.
-      # Does not affect gate correctness - the deterministic scanners
-      # (verify_imports.dart, verify_purity.dart, verify_dependencies.dart)
-      # are the enforcement floor; the plugin is IDE-time assistance on top.
-      run_flutter analyze --no-pub --fatal-infos
-      if [[ "$has_tests" == "true" ]]; then run_flutter test --no-pub; fi
-    else
-      run_dart analyze --fatal-infos
-      if [[ "$has_tests" == "true" ]]; then run_dart test; fi
+    # `dart analyze` (not `flutter analyze`) for every member: the plugin host
+    # only loads under dart analyze (sdk#63787), and dart analyze resolves
+    # Flutter members fine after the single workspace `pub get`. Tests still
+    # go through the matching runner.
+    run_dart analyze --fatal-infos .
+    if [[ "$has_tests" == "true" ]]; then
+      if [[ "$runner" == "flutter" ]]; then run_flutter test --no-pub
+      else run_dart test; fi
     fi )
 }
 
@@ -107,8 +104,8 @@ if [[ "$MODE" == "package" ]]; then
   echo "OK (package $TARGET)"; exit 0
 fi
 
-echo "==> Codegen (freshness check)"
-bash "$ROOT_DIR/tool/codegen.sh"
+echo "==> Codegen (freshness check, cold rebuild)"
+bash "$ROOT_DIR/tool/codegen.sh" --cold
 
 if [[ -n "$before_snapshot" ]]; then
   after_snapshot="$(mktemp)"; temporary_files+=("$after_snapshot")
@@ -124,7 +121,9 @@ fi
 echo "==> Transitive purity (resolved graph)"
 run_dart run tool/verify_purity.dart
 
-echo "==> Toolchain analyze (root)"
+echo "==> Analyze (root context: tool/, test/ and every member - the only stage"
+echo "    where alatyr_lints diagnostics are enforced: one-shot flutter analyze"
+echo "    never surfaces plugin diagnostics, sdk#63787)"
 run_dart analyze --fatal-infos .
 
 echo "==> Toolchain tests (root)"

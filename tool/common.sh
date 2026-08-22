@@ -7,6 +7,10 @@ set -euo pipefail
 
 CHECKS_TEST_TIMEOUT="${CHECKS_TEST_TIMEOUT:-300}"
 CHECKS_ANALYZE_TIMEOUT="${CHECKS_ANALYZE_TIMEOUT:-180}"
+# build_runner AOT-compiles every builder on a cold .dart_tool/build (~20 s
+# per package on an M-series laptop) before it generates anything, and a
+# mis-resolved builder can spin forever - same wall-clock guard as tests.
+CHECKS_CODEGEN_TIMEOUT="${CHECKS_CODEGEN_TIMEOUT:-600}"
 
 is_ci() { [[ -n "${CI:-}" && "${CI}" != "false" && "${CI}" != "0" ]]; }
 
@@ -29,6 +33,15 @@ _tool() { # _tool <dart|flutter> <args...>
   case "${1:-}" in
     test)    run_guarded "$CHECKS_TEST_TIMEOUT" "${cmd[@]}" "$@" ;;
     analyze) run_guarded "$CHECKS_ANALYZE_TIMEOUT" "${cmd[@]}" "$@" ;;
+    run)
+      # Only `dart run build_runner ...` gets the guard: the other `dart run`
+      # callers (tool/*.dart plan builders and validators) are sub-second,
+      # and guarding them would only add a perl/timeout hop per call.
+      if [[ "${2:-}" == "build_runner" ]]; then
+        run_guarded "$CHECKS_CODEGEN_TIMEOUT" "${cmd[@]}" "$@"
+      else
+        "${cmd[@]}" "$@"
+      fi ;;
     *)       "${cmd[@]}" "$@" ;;
   esac
 }

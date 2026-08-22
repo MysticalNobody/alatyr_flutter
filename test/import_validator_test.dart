@@ -148,8 +148,39 @@ import 'package:good3/g.dart';
       );
       expect(v.join('\n'), contains('mockito'));
     });
+    test('banned rule covers bin/, example/ and integration_test/', () {
+      expect(
+        v.join('\n'),
+        allOf(
+          matches(
+            RegExp(r'packages/b/bin/b_cli_check\.dart:\d+:\d+: .*provider'),
+          ),
+          matches(
+            RegExp(r'packages/b/example/b_example_check\.dart:\d+:\d+: .*hive'),
+          ),
+          matches(
+            RegExp(
+              r'packages/b/integration_test/b_flow_check\.dart:\d+:\d+: .*riverpod',
+            ),
+          ),
+        ),
+      );
+    });
+    test('boundary rule stays lib/-only in the widened scopes', () {
+      expect(
+        v.join('\n'),
+        isNot(
+          matches(
+            RegExp(
+              r'(b_cli_check|b_flow_check)\.dart:\d+:\d+: import of member',
+            ),
+          ),
+        ),
+      );
+    });
     // 4 original violation cases + 2 (flutter_bloc, dart:ui_web pure-core
-    // widening) + 2 (orphan: missing-from-graph + banned mockito) = 8.
-    test('exact violation count', () => expect(v, hasLength(8)));
+    // widening) + 2 (orphan: missing-from-graph + banned mockito)
+    // + 3 (banned imports in bin/, example/, integration_test/) = 11.
+    test('exact violation count', () => expect(v, hasLength(11)));
   });
 }

@@ -58,15 +58,12 @@ class _Visitor extends SimpleAstVisitor<void> {
   // branch's URI (`if (...) 'uri'`) — a Flutter/UI dependency taints core
   // purity regardless of which branch a given platform selects.
   void _checkDirective(NamespaceDirective node) {
-    final graph = GraphLoader.instance.graphFor(
-      _context.definingUnit.file.path,
-    );
-    if (graph == null) return;
+    final path = _context.definingUnit.file.path;
+    final root = GraphLoader.instance.rootFor(path);
+    final graph = GraphLoader.instance.graphFor(path);
+    if (root == null || graph == null) return;
 
-    final fromKey = graphKeyForPath(
-      filePath: _context.definingUnit.file.path,
-      graph: graph,
-    );
+    final fromKey = graphKeyForPath(filePath: path, graph: graph, root: root);
     if (fromKey == null) return;
 
     _checkUri(

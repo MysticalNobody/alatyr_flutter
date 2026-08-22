@@ -257,6 +257,14 @@ List<_Directive> _directives(String src) {
   return out;
 }
 
+const List<String> _scannedScopes = [
+  'lib',
+  'bin',
+  'example',
+  'integration_test',
+  'test',
+];
+
 List<String> validateImports({
   required String rootDir,
   String graphPath = 'docs/reference/package_graph.yaml',
@@ -301,7 +309,12 @@ List<String> validateImports({
       );
     }
     final isPure = node != null && graph.pureDartPackages.contains(name);
-    for (final scope in ['lib', 'test']) {
+    // Every directory pub treats as Dart source. Boundary, purity and the
+    // data_local secret scan stay lib/-only (they govern the package's
+    // public/production surface); the banned-package rule applies to all of
+    // them - a banned import in a CLI entrypoint, an example, or a patrol
+    // flow is just as much a banned dependency as one in lib/.
+    for (final scope in _scannedScopes) {
       final dir = Directory(p.join(rootDir, entry.value, scope));
       if (!dir.existsSync()) continue;
       final inLib = scope == 'lib';

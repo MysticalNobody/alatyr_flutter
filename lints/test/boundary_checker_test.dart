@@ -17,7 +17,7 @@ packages:
       allowed_dependencies: [feature_settings_api, app_core, design_system] }
   feature_home:
     { kind: feature_impl, allowed_dependencies: [app_core] }
-  alatyr_starter: { kind: app_root, allowed_dependencies: "*_all_members" }
+  demo_app: { kind: app_root, allowed_dependencies: "*_all_members" }
 ''';
 
 void main() {
@@ -47,7 +47,7 @@ void main() {
       expect(check('feature_settings', 'feature_settings_api'), isNull);
     });
     test('app_root (sentinel) may import anything graphed', () {
-      expect(check('alatyr_starter', 'feature_settings'), isNull);
+      expect(check('demo_app', 'feature_settings'), isNull);
     });
     test('self-import and external packages are ignored', () {
       expect(check('app_core', 'app_core'), isNull);
