@@ -1,7 +1,7 @@
 # Alatyr — Flutter Starter for AI-Agent Development: Design
 
 - **Date:** 2026-08-13
-- **Status:** approved; implementation in progress (M2 done)
+- **Status:** approved; implementation in progress (M3 done)
 - **Scheme:** Claude Code implements, OpenAI Codex cross-reviews
 
 ## 1. Purpose and constraints
@@ -332,20 +332,24 @@ every graph entry exists on disk).
 
 - `--fast`: format check → graph → imports (~5 s). Agent inner loop, pre-commit.
 - **full** (default): fast stages → worktree snapshot (tracked+staged diff +
-  untracked hashes) → codegen (`build_runner build --low-resources-mode
-  --delete-conflicting-outputs` in every package declaring `build_runner`) →
-  snapshot compare (**any** delta = stale generated artifacts → fail; tolerant
-  of a dirty developer tree) → **toolchain tests** (`dart test` at the
-  workspace root, under `run_guarded` — the fixture tests for init, both
+  untracked hashes) → codegen (`build_runner build` in every package
+  declaring `build_runner` — flags removed in build_runner 2.15, conflicting
+  outputs are always overwritten; the freshness stage forces a cold rebuild
+  — each codegen package's `.dart_tool/build` is removed first — because
+  build_runner 2.15 re-runs builders only when their inputs change) →
+  snapshot compare (**any** delta = stale generated artifacts → fail;
+  tolerant of a dirty developer tree) → **toolchain tests** (`dart test` at
+  the workspace root, under `run_guarded` — the fixture tests for init, both
   validators, the lexer, the plan builder, the e2e config parser; the
-  verifiers are themselves gated) → transitive purity over the resolved graph
-  (dart pub deps closure of pure packages) → per-package analyze+test from a
-  plan derived from the root `workspace:` list (`flutter analyze --no-pub
-  --fatal-infos` / `flutter test --no-pub` after the single resolve;
-  `dart analyze --fatal-infos` / `dart test` for pure packages) → lints
-  plugin isolated (pub get, analyze, test) → violations-fixture integration
-  check → critical-flows registry check (every entry points to an existing
-  test file).
+  verifiers are themselves gated) → transitive purity over the resolved
+  graph (dart pub deps closure of pure packages) → per-package analyze+test
+  from a plan derived from the root `workspace:` list (`dart analyze
+  --fatal-infos` for every member — one-shot `flutter analyze` never loads
+  the plugin host, sdk#63787; the root `dart analyze` stage is the
+  plugin-enforcing one — tests keep `flutter test --no-pub` / `dart test`) →
+  lints plugin isolated (pub get, analyze, test) → violations-fixture
+  integration check → critical-flows registry check (every entry points to
+  an existing test file).
 - `--package <p>`: targeted analyze+test for one package.
 - Generated files (`*.g.dart`, `*.freezed.dart`, `*.drift.dart`) are
   **committed**; `.gitignore` must not exclude them — the freshness stage
@@ -438,6 +442,8 @@ through a port from `feature_settings_api`.
 Shipped test exemplars (the copyable pattern set): bloc tests, structural
 widget tests via patrol finders, repository tests on in-memory drift
 (`NativeDatabase.memory()`), module assembly test, app bootstrap smoke test,
+the in-process "restart" case (a second widget tree + DI graph over the same
+in-memory database) as the widget-level twin of the patrol restart flow,
 one patrol e2e (launch → settings → toggle theme → restart → theme persisted).
 "Restart" here means re-invoking the app entrypoint within the test (fresh
 widget tree and DI graph, same storage); OS-level process-death testing is out
