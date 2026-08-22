@@ -42,7 +42,9 @@ shared preferences, or a log line.
 ## Platform prerequisites this port depends on
 
 - **iOS and macOS** ship `keychain-access-groups` in the app shell's
-  entitlements as an empty array (`app/ios/Runner/Runner.entitlements`);
+  entitlements as an empty array — `app/ios/Runner/Runner.entitlements` for
+  iOS, `app/macos/Runner/DebugProfile.entitlements` and
+  `app/macos/Runner/Release.entitlements` for macOS (both carry the key);
   the App Group name goes in only when App Groups are enabled.
   `DEVELOPMENT_TEAM` is stripped from the iOS project — it is a
   per-developer signing identity, not something a template ships.
@@ -62,5 +64,8 @@ any log line, or in drift.
   `data_local`'s `lib/`: a token/secret/password/credential-shaped
   identifier there fails the gate (defense in depth, not a semantic
   guarantee — full tracking is a review-owned gap).
-- **`.claude/settings.json`** denies `Read` on `.dart-defines/*.env` —
-  agents can read the committed `*.env.example` files but never a real one.
+- **`.claude/settings.json`** denies **the `Read` tool** on
+  `.dart-defines/*.env` — Claude reads the committed `*.env.example` files
+  but never a real one through that tool. The deny binds that one tool: a
+  shell `cat` is not covered, and Codex has no equivalent rule, so the
+  never-in-repo list above (not the deny) is what keeps real secrets out.

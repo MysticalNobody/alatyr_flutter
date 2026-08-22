@@ -85,6 +85,6 @@ history stays readable in place:
 
 ## Russian twins
 
-Every file in this tree has a `*.ru.md` twin next to it (for example
-`docs/README.ru.md`). Twins are gitignored (`*.ru.md`) and exist only during
-template development — the public template ships English only.
+During template development each file in this tree had a gitignored
+`*.ru.md` twin next to it (for example `docs/README.ru.md`); the public
+template ships English only, so a fresh clone contains no twins.

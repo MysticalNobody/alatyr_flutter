@@ -5,11 +5,13 @@ hand, in one file, and handed down through constructors.
 
 ## The composition root
 
-`app/lib/bootstrap/app_dependencies.dart` is the **only** place in the
-repository that names a concrete implementation of a base-layer port —
+`app/lib/bootstrap/app_dependencies.dart` is the **only** place in
+production code that names a concrete implementation of a base-layer port —
 `ConsoleLogger`, `AppDatabase.open(...)`, `FlutterSecureStore.platform()`.
-Everything downstream of it, including every feature module, receives its
-dependencies through a constructor and never constructs its own:
+(Tests name their own fakes — `InMemorySecureStore`, `NoopLogger` — which is
+exactly what constructor injection buys.) Everything downstream of it,
+including every feature module, receives its dependencies through a
+constructor and never constructs its own:
 
 ```dart
 final class AppDependencies {

@@ -91,8 +91,9 @@ codegen-freshness gate stage is the only thing still protecting generated
 files from hand edits by Codex.
 
 Log in once with `codex login`. The review model is pinned in
-`.codex/config.toml` (`review_model = "gpt-5.6-sol"`); if Codex ever
-rejects that pin, `docs/workflow/maintenance.md` owns the update.
+`.codex/config.toml` (`review_model`) — read the value there rather than
+from this page; if Codex ever rejects that pin,
+`docs/workflow/maintenance.md` owns the update.
 
 ## Troubleshooting
 

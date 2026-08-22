@@ -78,3 +78,11 @@ entries as they land.
 - `guard_generated.sh` reads the first `file_path` of a Claude payload and
   parses patch headers only for `apply_patch`; a JSON parser would be
   exact, but bash + sed keeps the hook dependency-free.
+- Both agent-side guards bind tools, not the shell. `guard_generated.sh`
+  fires on `Edit`/`Write`/`apply_patch`, so a generated file rewritten from
+  Bash (`sed -i`, `cat >`) slips past it - the cold-rebuild
+  codegen-freshness stage is the enforcement of record. Likewise the
+  `Read(/.dart-defines/*.env)` deny in `.claude/settings.json` binds
+  Claude's `Read` tool only (a shell `cat` is not covered, and Codex has no
+  equivalent); the secret-leak scan plus the never-in-repo rule are the
+  backstops.

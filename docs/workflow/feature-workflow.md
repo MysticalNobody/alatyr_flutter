@@ -34,8 +34,14 @@ independent AI reviews; the human decides" hold in practice.
    impl dir]` once the first green implementation of the new behavior
    exists (Definition of Done item 2).
 7. **Full gate:** `tool/checks.sh` (no flags) — green before review.
-8. **Cross-review:** `/cross-review` — independent Codex pass over the
-   whole diff (Definition of Done item 4).
+8. **Cross-review:** commit first, then `/cross-review` — an independent
+   Codex pass over the whole diff (Definition of Done item 4). The script
+   diffs committed HEAD against the base and refuses a dirty tree
+   (uncommitted or untracked files) with exit 3; that exit is recoverable —
+   commit and re-run. The other exit-3 reasons (codex absent, not logged
+   in, the pinned model rejected, base ref missing) are honest failures:
+   stop, report the reason verbatim under Remaining risks, and let the
+   human waive Definition of Done item 4.
 9. **Human behavioral check** for any UI-affecting change (Definition of
    Done item 5) — the one layer that stays human by design.
 
@@ -109,6 +115,10 @@ payload="$(cat)"
 # then, or the hook fires forever.
 printf '%s' "$payload" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true' && exit 0
 
+# Fails OPEN by design: a non-zero exit here (exit 3 - codex missing, not
+# logged in, dirty tree) must not trap the session in an unstoppable loop.
+# Swap `exit 0` for `exit 2` + the stderr reason if you want a missing
+# reviewer to block Stop instead.
 review_file="$(.claude/skills/cross-review/codex_review.sh --structured)" || exit 0
 verdict="$(grep -o '"verdict"[[:space:]]*:[[:space:]]*"[^"]*"' "$review_file" \
   | sed -E 's/.*"([a-z_]+)"$/\1/')"

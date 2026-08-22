@@ -7,11 +7,13 @@ of ADR-0004 (single gate): whatever a contributor runs locally is exactly
 what a PR runs, so a red CI run is always reproducible on a laptop.
 
 `tool/checks.sh` detects CI through the standard `CI` environment
-variable: any truthy value (`CI=true`, which GitHub Actions sets by
-default) switches the codegen-freshness check from a warning (dirty local
-tree tolerated) to a hard failure when the working tree is not a git
-repository at all — CI without a git worktree cannot verify freshness, so
-that combination is treated as a setup bug, not a pass.
+variable: any truthy value (`CI=true`, which GitHub Actions sets by default)
+turns exactly one case from a warning into a hard failure — the
+codegen-freshness stage running outside a git worktree, where it cannot
+compare anything. CI without a worktree is a setup bug, not a pass.
+Independently of `CI`, that stage compares a snapshot of the working tree
+taken before codegen with one taken after, so pre-existing local edits show
+up in both and are tolerated; only what codegen itself changed fails it.
 
 ## `ci.yml` today
 

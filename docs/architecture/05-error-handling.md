@@ -34,6 +34,12 @@ final class AppFailure {
 }
 ```
 
+Unlike `Result`, `AppFailure` **does** have value equality: `==` and
+`hashCode` cover `code` and `message` only, with `cause` deliberately
+excluded (an arbitrary `Object?` has no useful equality). So
+`expect(failure, const AppFailure(code: ..., message: ...))` works and
+ignores whatever exception was wrapped.
+
 Codes so far: `config.invalid-env`, `config.invalid-url` (`app_config`),
 `settings.load-failed`, `settings.save-failed` (`feature_settings`),
 `secure.read-failed`, `secure.write-failed`, `secure.delete-failed`
