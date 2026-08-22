@@ -16,9 +16,17 @@ final class GraphLoader {
   final Map<String, String?> _rootByDirectory = {};
   final Map<String, PackageGraph?> _graphByRoot = {};
 
-  PackageGraph? graphFor(String filePath) {
+  /// The nearest ancestor directory of [filePath] holding
+  /// docs/reference/package_graph.yaml, or null. Cached per directory; the
+  /// same root [graphFor] loads the graph from, so rules can anchor
+  /// path -> graph-key resolution at it.
+  String? rootFor(String filePath) {
     final dir = p.dirname(p.normalize(filePath));
-    final root = _rootByDirectory.putIfAbsent(dir, () => _findRoot(dir));
+    return _rootByDirectory.putIfAbsent(dir, () => _findRoot(dir));
+  }
+
+  PackageGraph? graphFor(String filePath) {
+    final root = rootFor(filePath);
     if (root == null) return null;
     return _graphByRoot.putIfAbsent(root, () => _load(root));
   }

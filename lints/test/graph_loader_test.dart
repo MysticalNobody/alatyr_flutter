@@ -153,4 +153,21 @@ void main() {
       tempDir.deleteSync(recursive: true);
     }
   });
+
+  test('rootFor returns the directory holding the graph, null outside', () {
+    GraphLoader.instance.clearForTesting();
+    final tempDir = Directory.systemTemp.createTempSync();
+    try {
+      Directory('${tempDir.path}/docs/reference').createSync(recursive: true);
+      File(
+        '${tempDir.path}/docs/reference/package_graph.yaml',
+      ).writeAsStringSync(_outerGraph);
+      final libFile = File('${tempDir.path}/packages/a/lib/x.dart')
+        ..createSync(recursive: true);
+      expect(GraphLoader.instance.rootFor(libFile.path), tempDir.path);
+      expect(GraphLoader.instance.rootFor('/nonexistent/x/lib/y.dart'), isNull);
+    } finally {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
 }

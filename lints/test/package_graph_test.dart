@@ -9,7 +9,7 @@ pure_dart_packages: [app_core]
 packages:
   app_core:   { kind: base, allowed_dependencies: [] }
   app_config: { kind: base, allowed_dependencies: [app_core] }
-  alatyr_starter: { kind: app_root, allowed_dependencies: "*_all_members" }
+  demo_app: { kind: app_root, allowed_dependencies: "*_all_members" }
 ''';
 
 void main() {
@@ -17,7 +17,7 @@ void main() {
     final g = PackageGraph.tryParse(_graph)!;
     expect(g.kinds['app_config'], 'base');
     expect(g.allowed['app_config'], ['app_core']);
-    expect(g.allowsAll, contains('alatyr_starter'));
+    expect(g.allowsAll, contains('demo_app'));
     expect(g.banned['get_it'], contains('DI'));
     expect(g.pure, contains('app_core'));
   });
