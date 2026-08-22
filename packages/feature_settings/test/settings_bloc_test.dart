@@ -17,6 +17,9 @@ void main() {
   late StreamController<ThemeMode> modes;
   late List<ThemeMode> completedSaves;
   late Completer<Result<void>> pendingSave;
+  late Completer<Result<void>> darkSave;
+  late Completer<Result<void>> lateSave;
+  late bool lightStartedWhileDarkPending;
 
   setUpAll(() => registerFallbackValue(ThemeMode.system));
 
@@ -145,30 +148,42 @@ void main() {
     'a slower earlier save completes before a later one starts, so the latest choice wins',
     setUp: () {
       completedSaves = [];
+      lightStartedWhileDarkPending = false;
+      darkSave = Completer<Result<void>>();
       when(() => repository.saveThemeMode(ThemeMode.dark)).thenAnswer((
         _,
       ) async {
-        await Future<void>.delayed(const Duration(milliseconds: 30));
+        final result = await darkSave.future;
         completedSaves.add(ThemeMode.dark);
-        return const Ok(null);
+        return result;
       });
       when(() => repository.saveThemeMode(ThemeMode.light)).thenAnswer((
         _,
       ) async {
+        lightStartedWhileDarkPending = !darkSave.isCompleted;
         completedSaves.add(ThemeMode.light);
         return const Ok(null);
       });
     },
     build: () => SettingsBloc(repository),
     seed: () => const SettingsState.ready(themeMode: ThemeMode.system),
-    act: (bloc) => bloc
-      ..add(const SettingsThemeModeChanged(ThemeMode.dark))
-      ..add(const SettingsThemeModeChanged(ThemeMode.light)),
-    wait: const Duration(milliseconds: 80),
+    act: (bloc) async {
+      bloc
+        ..add(const SettingsThemeModeChanged(ThemeMode.dark))
+        ..add(const SettingsThemeModeChanged(ThemeMode.light));
+      await Future<void>.delayed(Duration.zero);
+      darkSave.complete(
+        const Ok(null),
+      ); // always resolved: never strands close()
+      await Future<void>.delayed(Duration.zero);
+    },
     expect: () => const <SettingsState>[],
-    // Without serialization the fast `light` save would complete first and
-    // the slow `dark` one would overwrite it.
-    verify: (_) => expect(completedSaves, [ThemeMode.dark, ThemeMode.light]),
+    // Without serialization the light save would run while dark was still
+    // pending, and dark would overwrite it afterwards.
+    verify: (_) {
+      expect(lightStartedWhileDarkPending, isFalse);
+      expect(completedSaves, [ThemeMode.dark, ThemeMode.light]);
+    },
   );
 
   blocTest<SettingsBloc, SettingsState>(
@@ -208,22 +223,21 @@ void main() {
   blocTest<SettingsBloc, SettingsState>(
     'a save that completes after close() neither throws nor emits',
     setUp: () {
-      when(() => repository.saveThemeMode(any())).thenAnswer(
-        (_) => Future<Result<void>>.delayed(
-          const Duration(milliseconds: 20),
-          () => const Err(
-            AppFailure(code: 'settings.save-failed', message: 'late'),
-          ),
-        ),
-      );
+      lateSave = Completer<Result<void>>();
+      when(
+        () => repository.saveThemeMode(any()),
+      ).thenAnswer((_) => lateSave.future);
     },
     build: () => SettingsBloc(repository),
     seed: () => const SettingsState.ready(themeMode: ThemeMode.system),
     act: (bloc) async {
       bloc.add(const SettingsThemeModeChanged(ThemeMode.dark));
       await Future<void>.delayed(Duration.zero);
-      await bloc.close();
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      final closing = bloc.close();
+      lateSave.complete(
+        const Err(AppFailure(code: 'settings.save-failed', message: 'late')),
+      );
+      await closing;
     },
     expect: () => const <SettingsState>[],
     errors: () => isEmpty,
