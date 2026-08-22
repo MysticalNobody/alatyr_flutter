@@ -21,10 +21,8 @@ class AppDatabase extends _$AppDatabase {
   ///
   /// `web` is mandatory for web builds (`driftDatabase` throws without it)
   /// and names the two assets drift needs next to `index.html`:
-  /// `sqlite3.wasm` and `drift_worker.js`. The template's app shell does
-  /// not ship those binaries yet (M5 carryover); until then web builds
-  /// compile and run but persistence fails at open time with a clear
-  /// drift error rather than an ArgumentError.
+  /// `sqlite3.wasm` and `drift_worker.js`. The app shell ships both under
+  /// `app/web/` (see docs/workflow/maintenance.md, Web assets).
   AppDatabase.open({required String name})
     : super(
         driftDatabase(

@@ -67,6 +67,27 @@ so this is expected and not a violation. Do not "fix" it by vendoring
 around `flutter_bloc`, and do not read `provider`'s presence in the
 lockfile or `flutter pub deps` output as a banned-package hit.
 
+## Web assets
+
+`app/web/sqlite3.wasm` and `app/web/drift_worker.js` are binaries drift
+needs at runtime for web persistence — not npm/pub packages, so they are
+committed as-is rather than fetched at build time.
+
+- `sqlite3.wasm` comes from the `sqlite3.dart` GitHub release matching
+  `pubspec.lock`'s `sqlite3` version (currently `3.5.2`):
+  `https://github.com/simolus3/sqlite3.dart/releases/download/sqlite3-3.5.2/sqlite3.wasm`,
+  sha256
+  `13d3f11d05b39ba0618a7115fb41640a5d48b6300f5d3f325f554b42bd6688a4`.
+- `drift_worker.js` comes from the `drift` GitHub release matching
+  `pubspec.lock`'s `drift` version (currently `2.34.3`):
+  `https://github.com/simolus3/drift/releases/download/drift-2.34.3/drift_worker.js`,
+  sha256
+  `4db0469de8ceabad8d5cd3d920614486ba587e100e39523f36f704a3aec5f26c`.
+
+Refresh both files (and the hashes recorded above) whenever either
+package is bumped in `pubspec.lock`; verify each download's sha256 before
+committing.
+
 ## Running an upgrade
 
 1. Bump the pin (Flutter, a package constraint, the Codex model, or a CLI

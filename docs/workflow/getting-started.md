@@ -56,9 +56,14 @@ Only public client values belong in `dev.env` (base URLs, publishable
 keys) — see `docs/architecture/06-security.md`. `<device>` is any device
 `fvm flutter devices` lists.
 
-**Web:** the app compiles and runs, but persistence needs two web-specific
-assets drift ships for the browser (`sqlite3.wasm`, `drift_worker.js`) that
-this milestone does not wire up yet — lands in M5.
+**Web:** the two assets drift needs for browser persistence
+(`sqlite3.wasm`, `drift_worker.js`) ship in `app/web/` (see
+`docs/workflow/maintenance.md`, Web assets). Without COOP/COEP response
+headers drift falls back to `sharedIndexedDb` (persists, slower); with
+them it uses `opfsLocks`. A missing asset surfaces in the browser console
+as `WebAssembly ... HTTP status code is not ok` (logged through the app's
+theme-stream warning). `tool/web_smoke.sh` is the runtime check that
+proves persistence survives a reload.
 
 ## Trust steps
 
