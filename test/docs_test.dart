@@ -23,6 +23,16 @@ const requiredDocs = [
   'docs/adr/0004-single-gate.md',
   'docs/adr/0005-cross-review-protocol.md',
   'docs/adr/0006-working-placeholder-instantiation.md',
+  'docs/testing/strategy.md',
+  'docs/testing/widget-test-guardrails.md',
+  'docs/workflow/getting-started.md',
+  'docs/workflow/feature-workflow.md',
+  'docs/workflow/maintenance.md',
+  'docs/workflow/modules.md',
+  'docs/reference/critical_flows.md',
+  'docs/reference/ci_contract.md',
+  'docs/reference/feature_package_skeletons.md',
+  'README.md',
 ];
 
 final _link = RegExp(r'\[[^\]]*\]\(([^)\s#]+)(#[^)]*)?\)');
@@ -104,6 +114,34 @@ void main() {
       );
     }
   });
+
+  test(
+    'critical_flows.md has the registry table shape the gate will parse',
+    () {
+      final lines = File('docs/reference/critical_flows.md').readAsLinesSync();
+      expect(lines, contains('| Flow | Test |'));
+      final rows = lines.where((l) => l.trimLeft().startsWith('|'));
+      for (final row in rows) {
+        final cells = row
+            .split('|')
+            .map((c) => c.trim())
+            .where((c) => c.isNotEmpty)
+            .toList();
+        if (cells.isEmpty || cells.first == 'Flow') {
+          continue; // header
+        }
+        if (cells.every((c) => RegExp(r'^:?-+:?$').hasMatch(c))) {
+          continue; // separator
+        }
+        expect(cells, hasLength(2), reason: row);
+        expect(
+          File(cells[1]).existsSync(),
+          isTrue,
+          reason: 'registry entry points to a missing test: ${cells[1]}',
+        );
+      }
+    },
+  );
 
   test('no shipped (tracked) file contains Cyrillic', () {
     final tracked =
