@@ -35,6 +35,16 @@ codex login status >/dev/null 2>&1 || { echo "review not performed: codex is not
 REVIEW_MODEL="$(sed -n 's/^review_model = "\(.*\)"$/\1/p' "$ROOT/.codex/config.toml" | head -n 1)"
 [[ -n "$REVIEW_MODEL" ]] || { echo "review not performed: review_model missing in .codex/config.toml" >&2; exit 3; }
 git rev-parse --verify --quiet "$BASE" >/dev/null || { echo "review not performed: base ref '$BASE' does not exist" >&2; exit 3; }
+# Cross-review reads committed HEAD only (the diffs below are --merge-base
+# <ref> HEAD); an uncommitted tree would otherwise be silently dropped from
+# the reviewed scope with no signal to the caller, so fail loud instead
+# (task 8 cross-review, P1: "silently omit uncommitted changes"). Commit
+# first, then review - matches the skill's documented "AFTER the commit"
+# invocation.
+if ! git diff --quiet HEAD --; then
+  echo "review not performed: uncommitted changes in the working tree - commit them first (cross-review reads committed HEAD only)" >&2
+  exit 3
+fi
 if [[ -z "$(git diff --merge-base "$BASE" HEAD --stat)" ]]; then
   echo "review not performed: no changes between $BASE and HEAD" >&2; exit 3
 fi
