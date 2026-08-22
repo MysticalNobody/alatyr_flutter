@@ -1,16 +1,19 @@
-name: CI
+name: Template smoke
 on:
   push: { branches: [main] }
   pull_request:
+  workflow_dispatch:
+concurrency:
+  group: template-smoke-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  checks:
+  smoke:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
         with:
           flutter-version-file: .fvmrc
           cache: true
-      # sqlite3's Dart hook downloads a sha-pinned prebuilt library from github.com at test time (docs/reference/ci_contract.md).
-      - run: tool/checks.sh
+      - run: tool/template_smoke.sh "${{ runner.temp }}/fixture_app"

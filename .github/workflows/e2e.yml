@@ -1,0 +1,88 @@
+name: E2E (android)
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  android:
+    runs-on: ubuntu-latest   # x86_64; KVM is exposed on hosted Linux runners since 2024-04
+    timeout-minutes: 45
+    # Advisory: hosted-runner emulator viability is unverified (spec section 15,
+    # risk 5; docs/reference/ci_contract.md). Flip to required once it is green
+    # on a handful of PRs.
+    continue-on-error: true
+    env:
+      PATROL_CLI_VERSION: "4.7.0"   # <-> patrol 4.9.0 in app/pubspec.yaml; tool/e2e.sh checks it
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: "17" }
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version-file: .fvmrc
+          cache: true
+      - uses: gradle/actions/setup-gradle@v4
+      - run: dart pub global activate patrol_cli "$PATROL_CLI_VERSION"
+      - name: Read the device spec from tool/e2e.yaml (single source of truth)
+        id: cfg
+        run: |
+          dart pub get
+          eval "$(dart run tool/e2e_config.dart)"
+          tag="${ANDROID_SYSTEM_IMAGE_X86_64#system-images;android-*;}"; tag="${tag%;x86_64}"
+          {
+            echo "api_level=$ANDROID_API_LEVEL"
+            echo "target=$tag"
+            echo "profile=$ANDROID_DEVICE_PROFILE"
+            echo "avd_name=$ANDROID_AVD_NAME"
+          } >> "$GITHUB_OUTPUT"
+      - name: AVD cache
+        uses: actions/cache@v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ steps.cfg.outputs.api_level }}-x86_64-${{ steps.cfg.outputs.target }}-${{ steps.cfg.outputs.profile }}-v1
+      - name: Create the AVD once (snapshot for the cache)
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ steps.cfg.outputs.api_level }}
+          target: ${{ steps.cfg.outputs.target }}
+          arch: x86_64
+          profile: ${{ steps.cfg.outputs.profile }}
+          avd-name: ${{ steps.cfg.outputs.avd_name }}
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: false
+          script: echo "AVD snapshot generated"
+      - name: Critical flows
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ steps.cfg.outputs.api_level }}
+          target: ${{ steps.cfg.outputs.target }}
+          arch: x86_64
+          profile: ${{ steps.cfg.outputs.profile }}
+          avd-name: ${{ steps.cfg.outputs.avd_name }}
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          emulator-boot-timeout: 900
+          script: tool/e2e.sh android --device emulator-5554
+      - name: Upload patrol logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: patrol-android-logs
+          path: |
+            app/build/app/outputs/androidTest-results/**
+            app/build/app/reports/androidTests/**
+          if-no-files-found: ignore

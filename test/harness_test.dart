@@ -108,22 +108,31 @@ void main() {
       },
     );
 
-    test('.codex/hooks.json wires the same guard script via the git root', () {
-      final hooks =
-          jsonDecode(File('.codex/hooks.json').readAsStringSync())
-              as Map<String, dynamic>;
-      final pre =
-          ((hooks['hooks'] as Map<String, dynamic>)['PreToolUse']
-                  as List<dynamic>)
-              .cast<Map<String, dynamic>>();
-      expect(pre.single['matcher'], 'Edit|Write');
-      final command =
-          ((pre.single['hooks'] as List<dynamic>).single
+    test(
+      '.codex/hooks.json wires both the guard and format scripts via the git root',
+      () {
+        final hooks =
+            jsonDecode(File('.codex/hooks.json').readAsStringSync())
+                as Map<String, dynamic>;
+        String commandOf(String event) {
+          final group =
+              ((hooks['hooks'] as Map<String, dynamic>)[event] as List<dynamic>)
+                  .cast<Map<String, dynamic>>();
+          expect(group.single['matcher'], 'Edit|Write');
+          return ((group.single['hooks'] as List<dynamic>).single
                   as Map<String, dynamic>)['command']
               as String;
-      expect(command, contains('git rev-parse --show-toplevel'));
-      expect(command, contains('tool/hooks/guard_generated.sh'));
-    });
+        }
+
+        final pre = commandOf('PreToolUse');
+        expect(pre, contains('git rev-parse --show-toplevel'));
+        expect(pre, contains('tool/hooks/guard_generated.sh'));
+
+        final post = commandOf('PostToolUse');
+        expect(post, contains('git rev-parse --show-toplevel'));
+        expect(post, contains('tool/hooks/format_dart.sh'));
+      },
+    );
   });
 
   group('codex review protocol', () {

@@ -99,7 +99,8 @@ and never silently skipped.
 `tool/checks.sh --fast` (format → graph → imports; the inner loop) ·
 `tool/checks.sh` (full gate) · `tool/checks.sh --package <dir>` ·
 `tool/codegen.sh [--cold]` · `tool/e2e.sh` and `dart run tool/init.dart`
-(both land in M5).
+(both land in M5). A PostToolUse hook formats every Dart file you edit
+(both agents); do not fight it — never re-patch to undo formatting.
 
 ## Code Review Rules
 
