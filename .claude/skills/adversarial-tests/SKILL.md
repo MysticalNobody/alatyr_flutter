@@ -13,8 +13,8 @@ from a subagent that has not seen your reasoning.
 ## 1. Break it
 
 Dispatch the `test-breaker` subagent (Agent tool, `subagent_type:
-test-breaker`) with: the `*_api` directory (`$0`), the implementation
-directory (`$1`, if given), the feature's spec/plan excerpt if you have
+test-breaker`) with: the `*_api` directory (`$1`), the implementation
+directory (`$2`, if given), the feature's spec/plan excerpt if you have
 one, and the diff range. Do not pass your own analysis or assumptions -
 only the artefacts. Wait for its scenario list.
 
