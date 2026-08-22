@@ -6,11 +6,10 @@ import 'secure_store.dart';
 /// [SecureStore] backed by `flutter_secure_storage` (Keychain / Keystore /
 /// libsecret / DPAPI / WebCrypto).
 ///
-/// Platform notes a consumer must keep: macOS needs `keychain-access-groups`
-/// in both `DebugProfile.entitlements` and `Release.entitlements` (the app
-/// shell ships them); iOS works with the default keychain group - add the
-/// same entry to `ios/Runner/*.entitlements` the day App Groups are
-/// enabled; Linux needs `libsecret-1-dev` and a running secret service.
+/// Platform notes a consumer must keep: iOS and macOS ship
+/// `keychain-access-groups` (empty array) in the app shell's entitlements;
+/// put the App Group name into it when App Groups are enabled; Linux needs
+/// `libsecret-1-dev` and a running secret service.
 ///
 /// Every operation is `async` and guarded by `on Exception`: the plugin
 /// throws `PlatformException` (codes differ per platform, so the TYPE is

@@ -37,6 +37,10 @@ entries as they land.
   package through a canonical package is allowed by design (`provider` sits
   in the root `pubspec.lock` transitively via `flutter_bloc` — no workspace
   member declares or imports it, so the graph rules are unaffected).
+- `docs/testing/widget-test-guardrails.md` / feature_settings exemplar:
+  rewrite the three wall-clock-timed bloc tests (slow-save ordering,
+  save-after-close, 30/80/20/40 ms) to Completer-driven ordering so CI load
+  cannot flake them.
 
 ## M5 (instantiation + e2e)
 
@@ -71,6 +75,10 @@ entries as they land.
   M5 adds them: allowlist those files in the test, or have init derive the
   tokens (e.g. read the app entry of `package_graph.yaml` and the root
   pubspec name) instead of hardcoding them.
+- `test/template_identity_test.dart` decodes files as strict UTF-8; before
+  M5 adds binary fixtures or assets under `packages/`, `lints/` or `tool/`,
+  switch to `utf8.decode(bytes, allowMalformed: true)` or restrict the scan
+  to text extensions.
 
 ## Recorded as accepted (no action planned)
 

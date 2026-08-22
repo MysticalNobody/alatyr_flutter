@@ -33,12 +33,23 @@ final class _AppState extends State<App> {
   Widget build(BuildContext context) => StreamBuilder<ThemeMode>(
     stream: _themeMode,
     initialData: ThemeMode.system,
-    builder: (context, snapshot) => MaterialApp.router(
-      title: 'Alatyr Starter',
-      theme: AppTheme.light(),
-      darkTheme: AppTheme.dark(),
-      themeMode: snapshot.data,
-      routerConfig: _router,
-    ),
+    builder: (context, snapshot) {
+      // A stream error clears the data; without this the app would fall back
+      // to system silently. The user-facing message is the settings feature's
+      // job (its bloc surfaces the same failure), so this is only a log line.
+      if (snapshot.hasError) {
+        widget.dependencies.logger.warn(
+          'settings: theme mode stream failed, using system',
+          error: snapshot.error,
+        );
+      }
+      return MaterialApp.router(
+        title: 'Alatyr Starter',
+        theme: AppTheme.light(),
+        darkTheme: AppTheme.dark(),
+        themeMode: snapshot.data ?? ThemeMode.system,
+        routerConfig: _router,
+      );
+    },
   );
 }
