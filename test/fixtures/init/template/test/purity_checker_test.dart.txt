@@ -1,0 +1,2 @@
+// Canned `dart pub deps --json`: {"root": "alatyr_workspace", "packages": []}
+void main() {}

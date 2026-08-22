@@ -1,0 +1,21 @@
+# THE machine-readable source of truth for architecture rules.
+# Semantics (spec section 6):
+#   - allowed_dependencies lists WORKSPACE MEMBERS only.
+#   - Third-party deps are governed solely by banned_packages below.
+#   - SDK deps (flutter, flutter_test) are forbidden in pure_dart_packages.
+#   - Keys are package names; the app entry is renamed by tool/init.dart.
+package_kinds: [base, feature_api, feature_impl, app_root]
+
+banned_packages:
+  get_it: "manual constructor DI (spec section 5)"
+  riverpod: "bloc is the canonical state management"
+
+pure_dart_packages: [app_core, app_config]
+
+packages:
+  app_core:             { kind: base, allowed_dependencies: [] }
+  feature_settings_api: { kind: feature_api, allowed_dependencies: [app_core] }
+  feature_settings:
+    kind: feature_impl
+    allowed_dependencies: [feature_settings_api, app_core]
+  alatyr_starter:       { kind: app_root, allowed_dependencies: "*_all_members" }

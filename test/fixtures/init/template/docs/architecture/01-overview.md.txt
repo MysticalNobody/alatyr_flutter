@@ -1,0 +1,3 @@
+| Layer | Members |
+|---|---|
+| `app_root` | `app/` (Dart package `alatyr_starter`) |

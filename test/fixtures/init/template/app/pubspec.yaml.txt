@@ -1,0 +1,33 @@
+name: alatyr_starter
+description: Alatyr Starter - the working placeholder app of the Alatyr Flutter template.
+publish_to: none
+resolution: workspace
+version: 0.1.0+1
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  app_core: any
+  app_config: any
+  design_system: any
+  data_local: any
+  data_secure: any
+  feature_settings_api: any
+  feature_settings: any
+  go_router: ^17.5.0
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  patrol_finders: ^3.6.0
+  patrol: ^4.9.0
+flutter:
+  uses-material-design: true
+patrol:
+  app_name: Alatyr Starter
+  test_directory: integration_test
+  android:
+    package_name: dev.alatyr.starter
+  ios:
+    bundle_id: dev.alatyr.starter

@@ -1,0 +1,1 @@
+// Rewrites contents and paths, deletes the template machinery.

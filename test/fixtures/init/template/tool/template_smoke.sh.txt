@@ -1,0 +1,2 @@
+#!/usr/bin/env bash
+# Template smoke: instantiate a throwaway copy and run the gate on it.
