@@ -36,7 +36,10 @@ const killAndWait = async (child) => {
   if (child.exitCode !== null || child.signalCode !== null) return;
   const exited = new Promise(r => child.once('exit', r));
   child.kill();
-  const timedOut = await Promise.race([exited.then(() => false), new Promise(r => setTimeout(() => r(true), 5000))]);
+  let timer;
+  const timeout = new Promise(r => { timer = setTimeout(() => r(true), 5000); });
+  const timedOut = await Promise.race([exited.then(() => false), timeout]);
+  clearTimeout(timer);
   if (timedOut && child.exitCode === null && child.signalCode === null) {
     try { child.kill('SIGKILL'); } catch { /* already gone */ }
     await exited;
