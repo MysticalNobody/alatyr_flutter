@@ -26,12 +26,16 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Patrol e2e (tool/e2e.sh). The orchestrator (below) runs every Dart
-        // test in its own process; that process boundary is the "restart"
-        // of the critical flows. Patrol's docs also set
+        // Patrol e2e (tool/e2e.sh). The orchestrator (testOptions below) runs
+        // every Dart test in its own process. That process boundary is NOT
+        // what the registered critical flow calls a "restart": that flow
+        // re-invokes the app entrypoint within a single test (spec section 8's
+        // convention, docs/reference/critical_flows.md). The boundary is what
+        // the second, bonus test in integration_test/settings_theme_test.dart
+        // spends to prove real OS process death. Patrol's docs also set
         // testInstrumentationRunnerArguments["clearPackageData"] = "true" -
-        // deliberately NOT here: it would wipe app data between the tests
-        // and with it the persisted state the restart flow asserts on.
+        // deliberately NOT here: it would wipe app data between the tests and
+        // with it the persisted state that bonus test reads.
         testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
     }
 
