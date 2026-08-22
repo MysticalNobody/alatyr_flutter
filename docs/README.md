@@ -38,13 +38,40 @@ One page per topic, newest facts first, always true of the current commit:
 - [adr/0006-working-placeholder-instantiation.md](adr/0006-working-placeholder-instantiation.md)
   — token replacement over a working app, not a template engine.
 
+## Testing
+
+- [testing/strategy.md](testing/strategy.md) — the pyramid table, no
+  coverage floor and why, the patrol-finders policy, "TMS from code",
+  the adversarial pass, and the eight verification layers of a feature.
+- [testing/widget-test-guardrails.md](testing/widget-test-guardrails.md)
+  — the eleven anti-hang rules for widget tests, each with its symptom,
+  cause, and recipe.
+
+## Workflow
+
+- [workflow/getting-started.md](workflow/getting-started.md) —
+  prerequisites, clone-to-green-gate walkthrough, running the app, and
+  the one-time Claude Code / Codex trust steps.
+- [workflow/feature-workflow.md](workflow/feature-workflow.md) — the
+  graph-first ritual step by step, the role table, the completion-report
+  shape, and the opt-in Stop-hook review-gate hardening.
+- [workflow/maintenance.md](workflow/maintenance.md) — pin update
+  cadence and checklist (Flutter, the codegen ceiling, patrol, the Codex
+  model). Survives instantiation.
+- [workflow/modules.md](workflow/modules.md) — optional modules
+  (superpowers, spec-kit, beads, marionette) and why nothing is vendored.
+
 ## Reference
 
 - [reference/package_graph.yaml](reference/package_graph.yaml) — the
   machine-readable dependency graph every enforcer parses.
-
-The rest of `docs/reference/`, `docs/testing/`, and `docs/workflow/` land in
-a later task of this milestone; this index grows with them.
+- [reference/critical_flows.md](reference/critical_flows.md) — the e2e
+  test-plan registry; gate-checked from M5 on.
+- [reference/ci_contract.md](reference/ci_contract.md) — what CI runs
+  and owns, what `ci.yml` does today, and what lands in M5.
+- [reference/feature_package_skeletons.md](reference/feature_package_skeletons.md)
+  — the file trees the graph-first ritual produces for a new feature
+  package pair.
 
 ## Supersession convention
 
