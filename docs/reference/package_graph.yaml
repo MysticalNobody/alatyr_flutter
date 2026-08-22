@@ -23,5 +23,14 @@ banned_packages:
 pure_dart_packages: [app_core, app_config]
 
 packages:
-  app_core:   { kind: base, allowed_dependencies: [] }
-  app_config: { kind: base, allowed_dependencies: [app_core] }
+  app_core:             { kind: base, allowed_dependencies: [] }
+  app_config:           { kind: base, allowed_dependencies: [app_core] }
+  design_system:        { kind: base, allowed_dependencies: [app_core] }
+  data_local:           { kind: base, allowed_dependencies: [app_core] }
+  data_secure:          { kind: base, allowed_dependencies: [app_core] }
+  feature_settings_api: { kind: feature_api, allowed_dependencies: [app_core] }
+  feature_settings:
+    kind: feature_impl
+    allowed_dependencies:
+      [feature_settings_api, app_core, design_system, data_local]
+  alatyr_starter:       { kind: app_root, allowed_dependencies: "*_all_members" }

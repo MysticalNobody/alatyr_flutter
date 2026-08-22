@@ -8,3 +8,9 @@ build/
 pubspec.lock
 !/pubspec.lock
 .superpowers/
+
+# Written by `flutter pub get`/`flutter test` into every member whose closure
+# has Flutter plugins; self-described "do not check into version control".
+.flutter-plugins-dependencies
+# Kotlin Gradle plugin session dir (android builds)
+.kotlin/

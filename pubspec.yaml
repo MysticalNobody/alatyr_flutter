@@ -6,6 +6,12 @@ environment:
 workspace:
   - packages/app_core
   - packages/app_config
+  - packages/design_system
+  - packages/data_local
+  - packages/data_secure
+  - packages/feature_settings_api
+  - packages/feature_settings
+  - app
 dependencies:
   path: ^1.9.0
   yaml: ^3.1.2

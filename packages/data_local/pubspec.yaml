@@ -1,0 +1,19 @@
+name: data_local
+description: Local persistence - drift database and a key-value DAO.
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  drift: ^2.34.0
+  # ^0.3.x pulls the hooks-based sqlite3 3.x; ^0.2.x silently resolves the
+  # old sqlite3_flutter_libs stack.
+  drift_flutter: ^0.3.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  build_runner: ^2.15.0
+  drift_dev: ^2.34.0

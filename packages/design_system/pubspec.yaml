@@ -1,0 +1,14 @@
+name: design_system
+description: Theme, design tokens and base widgets shared by every feature.
+publish_to: none
+resolution: workspace
+environment:
+  sdk: ^3.12.0
+  flutter: ">=3.44.0"
+dependencies:
+  flutter:
+    sdk: flutter
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  patrol_finders: ^3.6.0
