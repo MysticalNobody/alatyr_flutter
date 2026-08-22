@@ -1,0 +1,79 @@
+{
+  "devices": {
+    "com.apple.CoreSimulator.SimRuntime.iOS-17-4": [
+      {
+        "lastBootedAt": "2026-08-16T20:18:29Z",
+        "dataPath": "/Users/dev/Library/Developer/CoreSimulator/Devices/2795B332-9596-49C9-A0B4-925214A22577/data",
+        "dataPathSize": 12005134336,
+        "logPath": "/Users/dev/Library/Logs/CoreSimulator/2795B332-9596-49C9-A0B4-925214A22577",
+        "udid": "2795B332-9596-49C9-A0B4-925214A22577",
+        "isAvailable": true,
+        "logPathSize": 880640,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-15-Pro",
+        "state": "Booted",
+        "name": "iPhone 15 Pro"
+      },
+      {
+        "lastBootedAt": "2026-05-27T16:37:55Z",
+        "dataPath": "/Users/dev/Library/Developer/CoreSimulator/Devices/25D714E7-C604-41DA-8EE6-427F341AF2C6/data",
+        "dataPathSize": 7450501120,
+        "logPath": "/Users/dev/Library/Logs/CoreSimulator/25D714E7-C604-41DA-8EE6-427F341AF2C6",
+        "udid": "25D714E7-C604-41DA-8EE6-427F341AF2C6",
+        "isAvailable": true,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-15",
+        "state": "Shutdown",
+        "name": "iPhone 15"
+      }
+    ],
+    "com.apple.CoreSimulator.SimRuntime.iOS-18-4": [
+      {
+        "lastBootedAt": "2026-08-11T18:07:01Z",
+        "dataPath": "/Users/dev/Library/Developer/CoreSimulator/Devices/FFC9AB68-F606-4523-B970-E24B6CAE904B/data",
+        "dataPathSize": 11466276864,
+        "logPath": "/Users/dev/Library/Logs/CoreSimulator/FFC9AB68-F606-4523-B970-E24B6CAE904B",
+        "udid": "FFC9AB68-F606-4523-B970-E24B6CAE904B",
+        "isAvailable": true,
+        "logPathSize": 516096,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-16-Pro",
+        "state": "Shutdown",
+        "name": "iPhone 16 Pro"
+      },
+      {
+        "lastBootedAt": "2025-09-14T11:22:39Z",
+        "dataPath": "/Users/dev/Library/Developer/CoreSimulator/Devices/4C1B0F2E-6A73-4E8D-9F51-2B7A6C0D8E34/data",
+        "dataPathSize": 8287674368,
+        "logPath": "/Users/dev/Library/Logs/CoreSimulator/4C1B0F2E-6A73-4E8D-9F51-2B7A6C0D8E34",
+        "udid": "4C1B0F2E-6A73-4E8D-9F51-2B7A6C0D8E34",
+        "isAvailable": true,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-16",
+        "state": "Shutdown",
+        "name": "e2e_iphone"
+      }
+    ],
+    "com.apple.CoreSimulator.SimRuntime.iOS-26-2": [
+      {
+        "lastBootedAt": "2026-06-15T19:30:23Z",
+        "dataPath": "/Users/dev/Library/Developer/CoreSimulator/Devices/3E70097A-A9C1-4735-8B78-2A49C62881C2/data",
+        "dataPathSize": 7492026368,
+        "logPath": "/Users/dev/Library/Logs/CoreSimulator/3E70097A-A9C1-4735-8B78-2A49C62881C2",
+        "udid": "3E70097A-A9C1-4735-8B78-2A49C62881C2",
+        "isAvailable": true,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.iPhone-17-Pro",
+        "state": "Shutdown",
+        "name": "iPhone 17 Pro"
+      }
+    ],
+    "com.apple.CoreSimulator.SimRuntime.watchOS-26-2": [
+      {
+        "dataPath": "/Users/dev/Library/Developer/CoreSimulator/Devices/38991784-5E0D-4BAD-89C1-C1C8650D4FE0/data",
+        "dataPathSize": 4096,
+        "logPath": "/Users/dev/Library/Logs/CoreSimulator/38991784-5E0D-4BAD-89C1-C1C8650D4FE0",
+        "udid": "38991784-5E0D-4BAD-89C1-C1C8650D4FE0",
+        "isAvailable": true,
+        "deviceTypeIdentifier": "com.apple.CoreSimulator.SimDeviceType.Apple-Watch-Series-11-46mm",
+        "state": "Shutdown",
+        "name": "Apple Watch Series 11 (46mm)"
+      }
+    ]
+  }
+}
