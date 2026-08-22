@@ -40,9 +40,13 @@ git rev-parse --verify --quiet "$BASE" >/dev/null || { echo "review not performe
 # the reviewed scope with no signal to the caller, so fail loud instead
 # (task 8 cross-review, P1: "silently omit uncommitted changes"). Commit
 # first, then review - matches the skill's documented "AFTER the commit"
-# invocation.
-if ! git diff --quiet HEAD --; then
-  echo "review not performed: uncommitted changes in the working tree - commit them first (cross-review reads committed HEAD only)" >&2
+# invocation. `git diff --quiet HEAD --` only sees tracked files (modified
+# or staged); untracked new files are invisible to it, so the guard also
+# checks `git ls-files --others --exclude-standard` (fix-round-1: the
+# tracked-only guard could still approve a stale subset that omits new,
+# never-`git add`-ed files).
+if ! git diff --quiet HEAD -- || [[ -n "$(git ls-files --others --exclude-standard)" ]]; then
+  echo "review not performed: uncommitted changes in the working tree (tracked edits and/or untracked new files) - commit them first (cross-review reads committed HEAD only)" >&2
   exit 3
 fi
 if [[ -z "$(git diff --merge-base "$BASE" HEAD --stat)" ]]; then

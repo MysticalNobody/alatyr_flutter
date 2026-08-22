@@ -198,6 +198,30 @@ void main() {
       expect(script.existsSync(), isTrue);
       expect(script.statSync().mode & 0x49, 0x49);
     });
+
+    test(
+      'codex_review.sh dirty-tree guard covers tracked AND untracked changes',
+      () {
+        // `git diff --quiet HEAD --` alone only sees tracked files (modified
+        // or staged); a new file that was never `git add`-ed is invisible to
+        // it, so the guard must also fail on untracked files, or a dirty
+        // tree could silently narrow the reviewed diff (task 8 fix round 1).
+        final script = File(
+          '.claude/skills/cross-review/codex_review.sh',
+        ).readAsStringSync();
+        expect(script, contains('git diff --quiet HEAD --'));
+        expect(script, contains('git ls-files --others --exclude-standard'));
+        // Both checks must gate the same guard clause, not live in unrelated
+        // branches.
+        expect(
+          RegExp(
+            r'git diff --quiet HEAD --.*\|\|.*git ls-files --others --exclude-standard',
+          ).hasMatch(script),
+          isTrue,
+          reason: 'the two checks must be OR-ed in one guard condition',
+        );
+      },
+    );
   });
 
   group('adversarial harness', () {
