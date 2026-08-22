@@ -204,67 +204,35 @@ void main() {
       },
     );
 
-    Future<int> runFormatWithStdin(String stdin) async {
-      final process = await Process.start('bash', [
-        'tool/hooks/format_dart.sh',
-      ]);
-      process.stdin.write(stdin);
-      await process.stdin.close();
-      await process.stdout.drain<void>();
-      await process.stderr.drain<void>();
-      return process.exitCode;
-    }
-
     test(
       'a Codex apply_patch tool_response formats the added file and leaves '
-      'the generated one alone (relative paths resolve against the git root)',
+      'the generated one alone (absolute temp paths keep the case hermetic; '
+      'a real payload\'s relative paths resolve against the git root)',
       () async {
-        // Relative paths in the payload must resolve against the repo's git
-        // root, not $tmp - so the fixtures live under the real tree and are
-        // cleaned up explicitly rather than relying on $tmp's own teardown.
-        final root = Process.runSync('git', [
-          'rev-parse',
-          '--show-toplevel',
-        ]).stdout.toString().trim();
-        final dirty = File('$root/a.dart')
+        final dirty = File('${tmp.path}/a.dart')
           ..writeAsStringSync('void main(){print( 1 );}\n');
-        final generated = File('$root/b.g.dart')
+        final generated = File('${tmp.path}/b.g.dart')
           ..writeAsStringSync('void main(){print( 1 );}\n');
-        addTearDown(() {
-          dirty.deleteSync();
-          generated.deleteSync();
-        });
         final payload = jsonEncode({
           'tool_name': 'apply_patch',
           'tool_input': {'command': '*** Begin Patch\n*** End Patch'},
           'tool_response':
               'Exit code: 0\nWall time: 0.1 seconds\nOutput:\nSuccess. '
-              'Updated the following files:\nA a.dart\nM b.g.dart\n',
+              'Updated the following files:\n'
+              'A ${dirty.path}\n'
+              'M ${generated.path}\n',
         });
-        expect(await runFormatWithStdin(payload), 0);
+        final process = await Process.start('bash', [
+          'tool/hooks/format_dart.sh',
+        ]);
+        process.stdin.write(payload);
+        await process.stdin.close();
+        await process.stdout.drain<void>();
+        await process.stderr.drain<void>();
+        expect(await process.exitCode, 0);
         expect(dirty.readAsStringSync(), 'void main() {\n  print(1);\n}\n');
         expect(generated.readAsStringSync(), 'void main(){print( 1 );}\n');
       },
     );
-
-    test('a Codex apply_patch tool_response with absolute temp paths formats '
-        'the dart file and leaves the generated one alone', () async {
-      final dirty = File('${tmp.path}/a.dart')
-        ..writeAsStringSync('void main(){print( 1 );}\n');
-      final generated = File('${tmp.path}/b.g.dart')
-        ..writeAsStringSync('void main(){print( 1 );}\n');
-      final payload = jsonEncode({
-        'tool_name': 'apply_patch',
-        'tool_input': {'command': '*** Begin Patch\n*** End Patch'},
-        'tool_response':
-            'Exit code: 0\nWall time: 0.1 seconds\nOutput:\nSuccess. '
-            'Updated the following files:\n'
-            'A ${dirty.path}\n'
-            'M ${generated.path}\n',
-      });
-      expect(await runFormatWithStdin(payload), 0);
-      expect(dirty.readAsStringSync(), 'void main() {\n  print(1);\n}\n');
-      expect(generated.readAsStringSync(), 'void main(){print( 1 );}\n');
-    });
   });
 }
