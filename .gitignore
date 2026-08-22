@@ -14,3 +14,6 @@ pubspec.lock
 .flutter-plugins-dependencies
 # Kotlin Gradle plugin session dir (android builds)
 .kotlin/
+
+# Local env files; only the *.example scheme is committed.
+.dart-defines/*.env
