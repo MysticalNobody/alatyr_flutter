@@ -45,7 +45,10 @@ patrol() {
 installed="$(patrol --version 2>/dev/null | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+' | head -n 1 || true)"
 [[ "$installed" == "$PATROL_CLI_VERSION" ]] || not_performed "patrol_cli $PATROL_CLI_VERSION is required (found '${installed:-none}'): dart pub global activate patrol_cli $PATROL_CLI_VERSION"
 export PATROL_FLUTTER_COMMAND
-if command -v fvm >/dev/null 2>&1; then PATROL_FLUTTER_COMMAND="$(fvm exec which flutter)"; else PATROL_FLUTTER_COMMAND="flutter"; fi
+if command -v fvm >/dev/null 2>&1; then
+  PATROL_FLUTTER_COMMAND="$(fvm exec which flutter)" \
+    || not_performed "fvm could not resolve the pinned Flutter SDK (fvm install)"
+else PATROL_FLUTTER_COMMAND="flutter"; fi
 
 if [[ "$LIST" == "true" ]]; then
   echo "android: avd=$ANDROID_AVD_NAME profile=$ANDROID_DEVICE_PROFILE api=$ANDROID_API_LEVEL images: arm64=$ANDROID_SYSTEM_IMAGE_ARM64 x86_64=$ANDROID_SYSTEM_IMAGE_X86_64"
@@ -84,7 +87,11 @@ case "$PLATFORM" in
       # other running emulator is an error, not a fallback.
       others=""
       for serial in $("$ADB" devices | awk '/^emulator-[0-9]+[[:space:]]+device/ {print $1}'); do
-        avd="$("$ADB" -s "$serial" emu avd name 2>/dev/null | head -n 1 | tr -d '\r')"
+        # `|| true`: an unreadable console must not abort the script with
+        # adb's own status (it would read as a failed e2e run). It also
+        # keeps the name adb did print before `head -n 1` closed the pipe
+        # on it - SIGPIPE fails the pipeline under `pipefail`.
+        avd="$("$ADB" -s "$serial" emu avd name 2>/dev/null | head -n 1 | tr -d '\r')" || true
         if [[ "$avd" == "$ANDROID_AVD_NAME" ]]; then DEVICE="$serial"; echo "    using running $ANDROID_AVD_NAME ($DEVICE)"; break; fi
         others="$others $serial($avd)"
       done
