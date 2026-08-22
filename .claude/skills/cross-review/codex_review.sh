@@ -49,6 +49,9 @@ COMMON=(-C "$ROOT" -s read-only --ephemeral
 
 if [[ "$STRUCTURED" == "true" ]]; then
   TARGET="$OUT/review.json"
+  # Delete any stale file from an earlier run so a silent codex failure
+  # (exit 0, no output) cannot be masked by leftover content below.
+  rm -f "$TARGET"
   PROMPT="Act as a code reviewer for this repository; do not modify files. Apply the '## Code Review Rules' section of AGENTS.md to the unified diff in the <stdin> block (the branch's changes against $BASE). Report findings only for rule violations you can point to with file and line; priority 0 = blocks merge, 3 = nit; confidence_score in [0,1]. Verdict request_changes iff any finding has priority <= 1."
   # With a positional prompt AND piped stdin, codex appends stdin as a
   # <stdin> block (codex exec --help) - the diff travels that way. -m pins
@@ -59,6 +62,8 @@ if [[ "$STRUCTURED" == "true" ]]; then
     || { echo "review not performed: codex exec exited non-zero (see $OUT/review.log)" >&2; exit 3; }
 else
   TARGET="$OUT/review.txt"
+  # Delete any stale file from an earlier run (see the --structured branch).
+  rm -f "$TARGET"
   # Native reviewer: applies AGENTS.md's Code Review Rules itself; a custom
   # prompt cannot be combined with --base (clap: mutually exclusive).
   codex exec "${COMMON[@]}" -c "review_model=\"$REVIEW_MODEL\"" review --base "$BASE" -o "$TARGET" \
