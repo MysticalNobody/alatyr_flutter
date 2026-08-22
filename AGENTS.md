@@ -90,6 +90,9 @@ waivers, deliberate skips, unverified assumptions; an empty section says
 
 Ambiguity → stop and ask, or file an ADR draft from `docs/adr/template.md`.
 Never improvise around a failing gate. Keep diffs scoped to the task.
+A harness failure — a hook that does not fire, a review that cannot run, a
+tool that errors — is reported to the human as it is, never worked around
+and never silently skipped.
 
 ## 8. Commands
 
