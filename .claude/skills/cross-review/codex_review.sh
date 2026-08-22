@@ -21,9 +21,9 @@ usage() { echo "usage: codex_review.sh [--base <ref>] [--structured] [--out <dir
 # the codex-reviewer agent and the Stop-hook sample branch on.
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --base) [[ $# -ge 2 ]] || { usage; exit 2; }; BASE="$2"; shift 2 ;;
+    --base) [[ $# -ge 2 && $2 != --* ]] || { usage; exit 2; }; BASE="$2"; shift 2 ;;
     --structured) STRUCTURED=true; shift ;;
-    --out) [[ $# -ge 2 ]] || { usage; exit 2; }; OUT="$2"; shift 2 ;;
+    --out) [[ $# -ge 2 && $2 != --* ]] || { usage; exit 2; }; OUT="$2"; shift 2 ;;
     *) usage; exit 2 ;;
   esac
 done

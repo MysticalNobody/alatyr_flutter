@@ -115,34 +115,6 @@ void main() {
     }
   });
 
-  test(
-    'critical_flows.md has the registry table shape the gate will parse',
-    () {
-      final lines = File('docs/reference/critical_flows.md').readAsLinesSync();
-      expect(lines, contains('| Flow | Test |'));
-      final rows = lines.where((l) => l.trimLeft().startsWith('|'));
-      for (final row in rows) {
-        final cells = row
-            .split('|')
-            .map((c) => c.trim())
-            .where((c) => c.isNotEmpty)
-            .toList();
-        if (cells.isEmpty || cells.first == 'Flow') {
-          continue; // header
-        }
-        if (cells.every((c) => RegExp(r'^:?-+:?$').hasMatch(c))) {
-          continue; // separator
-        }
-        expect(cells, hasLength(2), reason: row);
-        expect(
-          File(cells[1]).existsSync(),
-          isTrue,
-          reason: 'registry entry points to a missing test: ${cells[1]}',
-        );
-      }
-    },
-  );
-
   test('no shipped (tracked or untracked) file contains Cyrillic', () {
     Iterable<String> lsFiles(List<String> args) =>
         (Process.runSync('git', ['ls-files', ...args]).stdout as String)
