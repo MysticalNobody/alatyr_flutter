@@ -1,0 +1,37 @@
+# Instantiation (`tool/init.dart`)
+
+Template-repo only: this checkout already carries the placeholder identity
+(`alatyr_starter` / `dev.alatyr` / `Alatyr Starter`) that this command
+rewrites into yours. Skip this doc once you have run it — the command
+deletes itself as its last step.
+
+```bash
+dart run tool/init.dart --name my_app --org com.example \
+  [--display-name "My App"] [--template-url <url>] [--yes]
+```
+
+Prints the rename plan and asks to confirm (skip with `--yes`), then:
+rewrites the identity everywhere it legitimately appears (`app/`, native
+shells, the root `pubspec.yaml`, `docs/reference/package_graph.yaml`,
+`README.md`) — Android/Linux/web get the snake-case bundle id
+(`org.name`), iOS/macOS the camelCase one (`org.nameCamel`, no
+underscores; Apple bundle ids forbid them); deletes itself, its tests,
+and `docs/superpowers/` (the fixed list is `templateOnlyPaths` in
+`tool/src/init_rewrite.dart`); runs `dart format` on what it touched,
+then `dart pub get` and `tool/checks.sh --fast`. `docs/adr/` is never
+rewritten — see ADR-0006 for the full identity grammar and rationale.
+`--template-url` links the generated `README.md` back to Alatyr;
+`--print-identity` prints the placeholder tokens as `KEY='value'` lines
+instead of instantiating, for scripts that must not spell them
+(`tool/template_smoke.sh`).
+
+Needs a git checkout (`git ls-files` enumerates what to rewrite) — "Use
+this template" and `tool/template_smoke.sh` both give you one; a plain
+archive download does not, and the tool says so. If something looks wrong
+before you commit the result, recover with `git checkout -- . && git
+clean -fd`.
+
+## Next
+
+[`docs/workflow/getting-started.md`](getting-started.md) picks back up at
+the first gate run.

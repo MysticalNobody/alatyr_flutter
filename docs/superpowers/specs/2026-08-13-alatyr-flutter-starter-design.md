@@ -710,8 +710,13 @@ docs/
 │   └── widget-test-guardrails.md  # anti-hang rules (FakeAsync/teardown, finite
 │                              # fake streams, pumpUntil, drift timers)
 ├── workflow/
-│   ├── getting-started.md     # fvm, init, trust steps (Claude workspace trust;
-│   │                          # Codex config + hooks trust), first gate run
+│   ├── getting-started.md     # fvm, first gate run, running the app, trust
+│   │                          # steps (Claude workspace trust; Codex config +
+│   │                          # hooks trust); points at instantiation.md/e2e.md
+│   ├── instantiation.md       # tool/init.dart in full: rename plan, bundle-id
+│   │                          # grammar, templateOnlyPaths deletion list
+│   ├── e2e.md                 # tool/e2e.sh in full: device spec, patrol_cli
+│   │                          # pin, exit codes, disk cleanup
 │   ├── feature-workflow.md    # the ritual step-by-step (incl. optional
 │   │                          # plan-challenge stage) + role table +
 │   │                          # opt-in hardening (Stop-hook review gate) +

@@ -26,6 +26,8 @@ const requiredDocs = [
   'docs/testing/strategy.md',
   'docs/testing/widget-test-guardrails.md',
   'docs/workflow/getting-started.md',
+  'docs/workflow/instantiation.md',
+  'docs/workflow/e2e.md',
   'docs/workflow/feature-workflow.md',
   'docs/workflow/maintenance.md',
   'docs/workflow/modules.md',

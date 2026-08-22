@@ -52,6 +52,10 @@ One page per topic, newest facts first, always true of the current commit:
 - [workflow/getting-started.md](workflow/getting-started.md) —
   prerequisites, clone-to-green-gate walkthrough, running the app, and
   the one-time Claude Code / Codex trust steps.
+- [workflow/instantiation.md](workflow/instantiation.md) — `tool/init.dart`
+  in full: the rename plan, the bundle-id grammar, what it deletes.
+- [workflow/e2e.md](workflow/e2e.md) — `tool/e2e.sh` in full: the device
+  spec, the `patrol_cli` pin, exit codes, disk cleanup.
 - [workflow/feature-workflow.md](workflow/feature-workflow.md) — the
   graph-first ritual step by step, the role table, the completion-report
   shape, and the opt-in Stop-hook review-gate hardening.
