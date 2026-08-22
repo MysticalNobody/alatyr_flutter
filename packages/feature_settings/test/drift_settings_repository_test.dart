@@ -63,6 +63,40 @@ void main() {
     );
 
     test(
+      'given stored theme is an empty string, settings falls back to system',
+      () async {
+        final recorder = _RecordingLogger();
+        final logged = DriftSettingsRepository(
+          db.keyValueDao,
+          logger: recorder,
+        );
+        await db.keyValueDao.write(DriftSettingsRepository.themeModeKey, '');
+        expect(await logged.watchThemeMode().first, ThemeMode.system);
+        expect(recorder.records, hasLength(1));
+        expect(recorder.records.single.level, LogLevel.warn);
+      },
+    );
+
+    test(
+      'given stored theme is unicode garbage, settings falls back to system',
+      () async {
+        final recorder = _RecordingLogger();
+        final logged = DriftSettingsRepository(
+          db.keyValueDao,
+          logger: recorder,
+        );
+        await db.keyValueDao.write(
+          DriftSettingsRepository.themeModeKey,
+          '🎨_未知_🌈',
+        );
+        expect(await logged.watchThemeMode().first, ThemeMode.system);
+        expect(recorder.records, hasLength(1));
+        expect(recorder.records.single.level, LogLevel.warn);
+        expect(recorder.records.single.message, contains('🎨_未知_🌈'));
+      },
+    );
+
+    test(
       'saveThemeMode persists and the watch stream emits the new mode',
       () async {
         final emitted = <ThemeMode>[];
@@ -95,6 +129,21 @@ void main() {
       ).saveThemeMode(ThemeMode.dark);
       expect(result.failureOrNull?.code, SettingsFailureCodes.save);
       expect(result.failureOrNull?.cause, isA<Exception>());
+    },
+  );
+
+  test(
+    'saveThemeMode lets a StateError from a closed database propagate uncaught',
+    () async {
+      final dao = _MockDao();
+      when(
+        () => dao.write(any(), any()),
+      ).thenThrow(StateError('closed database'));
+      final repository = DriftSettingsRepository(dao);
+      await expectLater(
+        repository.saveThemeMode(ThemeMode.dark),
+        throwsA(isA<StateError>()),
+      );
     },
   );
 }

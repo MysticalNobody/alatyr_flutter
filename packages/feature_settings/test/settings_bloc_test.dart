@@ -254,4 +254,23 @@ void main() {
     ],
     errors: () => isEmpty,
   );
+
+  blocTest<SettingsBloc, SettingsState>(
+    'a stream error on the very first emission (no prior load) falls back to system with load-failed',
+    build: () => SettingsBloc(repository),
+    act: (bloc) {
+      bloc.add(const SettingsStarted());
+      modes.addError(StateError('database gone'));
+    },
+    expect: () => [
+      isA<SettingsReady>()
+          .having((s) => s.themeMode, 'themeMode', ThemeMode.system)
+          .having(
+            (s) => s.lastFailure?.code,
+            'lastFailure.code',
+            'settings.load-failed',
+          ),
+    ],
+    errors: () => isEmpty,
+  );
 }

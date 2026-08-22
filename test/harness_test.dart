@@ -199,4 +199,32 @@ void main() {
       expect(script.statSync().mode & 0x49, 0x49);
     });
   });
+
+  group('adversarial harness', () {
+    test('test-breaker subagent is read-only and uses a fixed model', () {
+      final lines = File('.claude/agents/test-breaker.md').readAsLinesSync();
+      final front = lines.sublist(1, lines.indexOf('---', 1)).join('\n');
+      expect(front, contains('name: test-breaker'));
+      expect(
+        RegExp(
+          r'^tools:\s*Read,\s*Grep,\s*Glob\s*$',
+          multiLine: true,
+        ).hasMatch(front),
+        isTrue,
+        reason: 'test-breaker must not get Edit/Write/Bash',
+      );
+      expect(front, contains('model: sonnet'));
+    });
+
+    test('adversarial-tests skill declares its frontmatter', () {
+      final lines = File(
+        '.claude/skills/adversarial-tests/SKILL.md',
+      ).readAsLinesSync();
+      final front = lines.sublist(1, lines.indexOf('---', 1)).join('\n');
+      expect(
+        front,
+        allOf(contains('name: adversarial-tests'), contains('description:')),
+      );
+    });
+  });
 }
