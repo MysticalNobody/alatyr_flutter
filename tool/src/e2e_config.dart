@@ -55,7 +55,14 @@ final class E2eConfig {
   final IosE2eConfig ios;
 }
 
-final _sdkmanagerImage = RegExp(r'^system-images;android-(\d+);[^;]+;[^;]+$');
+// Tag/abi segments are restricted to sdkmanager's own safe charset (not
+// merely "no semicolon") so a value can never smuggle a quote or shell
+// metacharacter past this check and into the single-quoted shell word
+// envLines() produces - system_images strings never pass through _req's
+// _shellUnsafe check, so this regex is the only gate they get.
+final _sdkmanagerImage = RegExp(
+  r'^system-images;android-(\d+);[A-Za-z0-9_.-]+;[A-Za-z0-9_.-]+$',
+);
 final _iosRuntime = RegExp(r'^iOS \d+(\.\d+)+$');
 
 E2eConfig loadE2eConfig(String yamlSource, {required String sourcePath}) {
@@ -144,7 +151,10 @@ E2eConfig loadE2eConfig(String yamlSource, {required String sourcePath}) {
 }
 
 /// `KEY=value` lines for tool/e2e.sh (the entrypoint single-quotes the
-/// values; `_req` rejects quotes and control characters so that is safe).
+/// values; `_req` rejects quotes and control characters in every field it
+/// reads, and the sdkmanager-path regex restricts `system_images` values to
+/// the same safe charset - `[A-Za-z0-9_.-]` plus the required `;` separators
+/// - so every value here is safe as a single-quoted shell word).
 List<String> envLines(E2eConfig c) => [
   'DEFAULT_PLATFORM=${c.defaultPlatform.name}',
   'ANDROID_AVD_NAME=${c.android.avdName}',

@@ -92,6 +92,25 @@ void main() {
     },
   );
 
+  test('a system image with shell metacharacters in the tag/abi segments is '
+      'rejected (never reaches the single-quoted eval line)', () {
+    for (final bad in [
+      "x86_64'\$(touch /tmp/pwn)'",
+      "x86_64'; touch /tmp/pwn; '",
+      'x86_64`touch /tmp/pwn`',
+    ]) {
+      final src = fixture('valid.yaml').replaceFirst(
+        'android-34;google_apis;x86_64',
+        'android-34;google_apis;$bad',
+      );
+      expect(
+        () => loadE2eConfig(src, sourcePath: 'x'),
+        throwsA(isA<E2eConfigException>()),
+        reason: bad,
+      );
+    }
+  });
+
   test('env dump lists every key bash needs', () {
     final c = loadE2eConfig(fixture('valid.yaml'), sourcePath: 'valid.yaml');
     final env = envLines(c);
