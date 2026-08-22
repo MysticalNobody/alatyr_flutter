@@ -1337,6 +1337,67 @@ git commit -m "feat(data_local): drift database with key-value DAO (generated co
 
 ---
 
+### Task 5b: Cold codegen in the freshness stage (found by Task 5's review)
+
+Task 5's review reproduced a gap in the gate: with a warm `.dart_tool/build` cache, build_runner 2.15 re-runs a builder only when its tracked inputs changed — a hand-edit to an already-generated `.g.dart` is NOT rewritten, so a format-neutral tamper passes the freshness compare. Spec §6 ("any delta = stale generated artifacts → fail") and hard invariant 5 need the compare to see a real regeneration. Cost of the fix: one cold builder AOT compile per codegen package per full gate (≈20 s each) — accepted; `tool/codegen.sh` without the flag stays warm for the developer loop.
+
+**Files:**
+- Modify: `tool/codegen.sh`, `tool/checks.sh`
+
+**Interfaces:**
+- Produces: `tool/codegen.sh [--cold]` — with `--cold`, every codegen package's `.dart_tool/build` is removed before its `build_runner build`; the gate's freshness stage calls `tool/codegen.sh --cold`.
+
+- [ ] **Step 1: Reproduce the gap (must pass the gate today)**
+
+From a clean tree: `sed -i.bak 's#^// ignore_for_file: type=lint$#// ignore_for_file: type=lint, unused_element#' packages/data_local/lib/src/key_value_dao.g.dart && rm packages/data_local/lib/src/key_value_dao.g.dart.bak && tool/checks.sh; echo "gate exit=$?"`
+Expected today: `OK`, `gate exit=0` (the tamper survives). Restore: `git checkout -- packages/data_local/lib/src/key_value_dao.g.dart`.
+
+- [ ] **Step 2: Implement `--cold`**
+
+`tool/codegen.sh` — parse the flag after the `cd "$ROOT_DIR"` line:
+
+```bash
+# --cold: drop each package's build_runner cache first. The gate's freshness
+# stage needs a REAL regeneration: a warm cache only re-runs builders whose
+# tracked inputs changed, so a hand-edited generated file would survive the
+# before/after snapshot compare (found in M3, Task 5 review). Developers
+# keep the warm default.
+COLD=false
+case "${1:-}" in
+  --cold) COLD=true ;;
+  "") ;;
+  *) echo "usage: tool/codegen.sh [--cold]" >&2; exit 2 ;;
+esac
+```
+
+and in the per-package subshell, before `run_dart run build_runner build`:
+
+```bash
+    if [[ "$COLD" == "true" ]]; then rm -rf .dart_tool/build; fi
+```
+
+`tool/checks.sh` — the freshness stage:
+
+```bash
+echo "==> Codegen (freshness check, cold rebuild)"
+bash "$ROOT_DIR/tool/codegen.sh" --cold
+```
+
+Update the tier header comment of `tool/checks.sh` (`codegen freshness` → `codegen freshness (cold rebuild)`).
+
+- [ ] **Step 3: Prove it**
+
+Repeat Step 1's tamper: the gate must now stop at the freshness stage with `Generated artifacts are stale, or pubspec.lock does not match the resolved dependencies` and `gate exit=1`. Restore the file with `git checkout -- packages/data_local/lib/src/key_value_dao.g.dart`. Then `bash tool/codegen.sh` (warm, no flag) → unchanged tree; `tool/checks.sh` → `OK`.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add tool/codegen.sh tool/checks.sh
+git commit -m "fix(gate): cold build_runner rebuild in the codegen freshness stage"
+```
+
+---
+
 ### Task 6: data_secure — secure storage port, adapter, in-memory double
 
 **Files:**
