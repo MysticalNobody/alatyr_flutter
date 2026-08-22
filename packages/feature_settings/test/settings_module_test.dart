@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:app_core/app_core.dart';
 import 'package:data_local/data_local.dart';
 import 'package:data_local/testing.dart';
 import 'package:feature_settings/feature_settings.dart';
@@ -9,6 +10,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:patrol_finders/patrol_finders.dart';
+
+/// Records what the repository logs, so `createSettingsModule(logger:)` is
+/// asserted to actually wire the seam end-to-end, not merely accept it.
+final class _RecordingLogger extends AppLogger {
+  final List<({LogLevel level, String message})> records = [];
+
+  @override
+  void log(
+    LogLevel level,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) => records.add((level: level, message: message));
+}
 
 /// Drift schedules a zero-duration timer when the bloc's watch subscription
 /// is cancelled (BlocProvider closes the bloc at tree disposal), and
@@ -46,6 +61,33 @@ void main() {
       await db.keyValueDao.write(DriftSettingsRepository.themeModeKey, 'dark');
       expect(await module.api.watchThemeMode().first, ThemeMode.dark);
     },
+  );
+
+  test('createSettingsModule(logger:) wires the logger through to the '
+      'repository, warning once on a corrupted stored value', () async {
+    final recorder = _RecordingLogger();
+    final logged = createSettingsModule(
+      keyValueDao: db.keyValueDao,
+      logger: recorder,
+    );
+    await db.keyValueDao.write(DriftSettingsRepository.themeModeKey, 'purple');
+    expect(await logged.api.watchThemeMode().first, ThemeMode.system);
+    expect(recorder.records, hasLength(1));
+    expect(recorder.records.single.level, LogLevel.warn);
+  });
+
+  test(
+    'OS-level process death (fresh AppDatabase reopened from disk) '
+    'restores the persisted theme',
+    () {},
+    skip:
+        'deliberate: OS-level death is a patrol e2e concern over a '
+        'file-backed AppDatabase closed and reopened from disk - lands in '
+        'M5 as the patrol restart flow registered in '
+        'docs/reference/critical_flows.md. The in-process restart proof '
+        '(a second widget tree + DI graph over the same live connection) '
+        'is app/test/app_test.dart: "a fresh app over the same database '
+        'restores the persisted theme".',
   );
 
   patrolWidgetTest(

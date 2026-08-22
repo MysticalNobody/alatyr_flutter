@@ -7,7 +7,8 @@ void main() {
 
   setUp(() => db = inMemoryAppDatabase());
   // Plain `test()` (no FakeAsync zone): awaiting close() here is fine. In
-  // `testWidgets` it is not - see the widget-test exemplars in Tasks 9-10.
+  // `testWidgets` it is not - see the widget-test exemplars in
+  // packages/feature_settings/test/ and app/test/.
   tearDown(() => db.close());
 
   test('write then read roundtrip', () async {

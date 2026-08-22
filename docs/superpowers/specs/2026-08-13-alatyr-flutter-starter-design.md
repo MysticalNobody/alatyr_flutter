@@ -1,7 +1,7 @@
 # Alatyr — Flutter Starter for AI-Agent Development: Design
 
 - **Date:** 2026-08-13
-- **Status:** approved; implementation in progress (M3 done)
+- **Status:** approved; implementation in progress (M4 done)
 - **Scheme:** Claude Code implements, OpenAI Codex cross-reviews
 
 ## 1. Purpose and constraints
@@ -102,9 +102,10 @@ alatyr_flutter/
 │   │   ├── cross-review/      # Codex review protocol
 │   │   └── adversarial-tests/ # test-breaker orchestration
 │   └── agents/
+│       ├── codex-reviewer.md  # thin wrapper: runs codex_review.sh for workflows
 │       └── test-breaker.md    # fresh-context adversarial scenario generator
 ├── .codex/
-│   ├── config.toml            # review profile (trust-gated project config)
+│   ├── config.toml            # review model pin (trust-gated project config)
 │   ├── hooks.json             # official Codex hooks schema → shared script
 │   └── review-schema.json     # structured findings schema
 └── .github/workflows/
@@ -148,12 +149,13 @@ natively with a 32 KiB default cap, Claude Code imports it). Sections:
 
    | Invariant | Enforced by |
    |---|---|
-   | 1, 2, 3, 9 | verify_dependencies + verify_imports + lint plugin (from the graph) |
+   | 1, 2, 3 | verify_dependencies + verify_imports + lint plugin (from the graph) |
    | 4 | heuristic secret-leak scan over `data_local` in verify_imports + `permissions.deny` on env reads + review rubric (**accepted partial gap**: full semantic secret-tracking is review-owned) |
    | 5 | guard_generated hook (both agents) + codegen-freshness snapshot stage |
    | 6 | human graph-diff approval (the deliberate human checkpoint) |
    | 7 | review rubric + patrol e2e reality check (**accepted gap**: no lint rule in v1 — a missing key surfaces the moment a flow test needs it) |
    | 8 | critical-flows registry check in the gate + review rubric |
+   | 9 | banned list enforced by tools; the ADR requirement is review-owned |
 5. **The graph-first feature ritual** (see §5).
 6. **Definition of Done:**
    1. `tool/checks.sh` (full) is green.
@@ -191,8 +193,8 @@ when to invoke `cross-review` and `adversarial-tests` skills, what the
 PreToolUse hook will block and what to do instead. **Rubric vs role:** the
 rubric (*what findings matter*) lives in AGENTS.md because Codex consumes it
 natively; role-assignment instructions (*"act as a reviewer, do not
-implement"*, invocation shape, sandbox) live only in the skill and the review
-profile — never in AGENTS.md, which Claude imports and Codex cloud applies to
+implement"*, invocation shape, sandbox) live only in the skill's per-call
+flags — never in AGENTS.md, which Claude imports and Codex cloud applies to
 implementation tasks too.
 
 **`.claude/rules/`** — path-scoped modular rules:
@@ -373,12 +375,16 @@ every graph entry exists on disk).
   the format stage permanently green); `permissions.allow` for
   `flutter analyze/test`, `dart format/test/run`, `tool/*.sh`;
   `permissions.deny` for `Read(.dart-defines/*.env)`.
-- `.codex/hooks.json`: the official Codex hooks schema, same script by
-  repo-relative path (loads after one-time project trust). *Implementation
-  note:* Codex-side matcher names for file-editing tools, blocking exit-code
-  semantics, and relative-path resolution are unverified against the current
-  schema — confirm during implementation; if Codex-side blocking differs, the
-  codegen-freshness gate remains the backstop for invariant 5.
+- `.codex/hooks.json`: the official Codex hooks schema, resolving the shared
+  script via a git-root-resolved path (Codex runs hooks with the session
+  cwd, not a fixed project-dir variable, so the hook command computes
+  `git rev-parse --show-toplevel` itself). *Verified facts:* file edits
+  arrive as the `apply_patch` tool (matched by `Edit|Write`) with the patch
+  text in `tool_input.command`; exit 2 + stderr blocks (both agents show the
+  message to the model). Hooks load only after project trust AND a one-time
+  per-checkout `/hooks` trust in the Codex TUI, and are skipped silently
+  otherwise — the codegen-freshness gate remains the backstop for
+  invariant 5.
 
 **Root `test/`** — fixture tests for the entire toolchain: init renamer, both
 validators, the import lexer, the checks plan builder, the e2e config parser.
@@ -391,30 +397,37 @@ The verifiers are themselves verified.
 1. **Pre-flight:** `codex` binary present; diff vs base branch non-empty.
    If not runnable → **honest failure**: report "review not performed
    because …"; never fabricate a verdict.
-2. **Primary invocation:** `codex review --base <branch> --json "<reviewer
-   prompt>"` — purpose-built, honors `## Code Review Rules` from AGENTS.md.
-   Default base ref: `main`; overridable via skill argument.
+2. **Primary invocation:** `codex exec -s read-only --ephemeral
+   -c model_reasoning_effort="high" -c skills.include_instructions=false
+   -c review_model="<pin>" review --base <ref> -o <file>` — the native
+   reviewer, which applies `## Code Review Rules` from AGENTS.md itself
+   (`codex review` has no `--json`, and a custom prompt cannot be combined
+   with `--base`). Default base ref: `main`; overridable via skill argument;
+   stdin is redirected from `/dev/null` — an open TTY-less stdin makes
+   `codex exec` wait.
 3. **Structured path** (when machine-readable findings are needed):
-   `codex exec --profile review --ephemeral --sandbox read-only
-   --output-schema .codex/review-schema.json` over `git diff --merge-base
-   main HEAD`, with an explicit "apply the Code Review Rules from AGENTS.md"
-   instruction in the prompt.
+   `git diff --merge-base <ref> HEAD | codex exec -s read-only --ephemeral
+   -c model_reasoning_effort="high" -c skills.include_instructions=false
+   -m <pin> --output-schema .codex/review-schema.json -o <file> "<reviewer
+   prompt>"`, the prompt explicitly instructing "apply the `## Code Review
+   Rules` section of AGENTS.md" (with a positional prompt and piped stdin
+   both present, codex appends the diff to the run as a `<stdin>` block).
 4. **Evaluate, don't obey:** every P0/P1 is either fixed or explicitly
    rebutted with reasoning in the task report; P2/P3 at the implementer's
    discretion; the verdict is quoted, not paraphrased.
 
 **`.codex/config.toml`** (project-scoped; loads after one-time trust —
-documented in getting-started):
+documented in getting-started) holds only the model pin:
 
 ```toml
 review_model = "gpt-5.6-sol"
-
-[profiles.review]
-model = "gpt-5.6-sol"
-model_reasoning_effort = "high"
-sandbox_mode = "read-only"
-approval_policy = "never"
 ```
+
+Codex >= 0.134 ignores `[profiles.*]` tables in project config (profiles are
+per-user files; a project-level one is skipped with a warning) — so
+reviewer-role constraints (read-only sandbox, ephemeral session, high
+reasoning effort, no user skills) are passed per call by the skill's script
+reading the model pin above, never via a profile.
 
 **`.codex/review-schema.json`:** `findings[] { title, body, priority (0–3),
 confidence_score (0–1), code_location { filepath, line_range } }` (the Codex
@@ -423,8 +436,8 @@ SDK cookbook findings shape) plus a top-level
 
 One rubric, three consumers: the same `## Code Review Rules` section drives
 local CLI review, headless review, and Codex cloud PR review (`@codex review`)
-with zero extra configuration. Read-only sandbox + `approval_policy = "never"`
-make the reviewer physically unable to modify files. A Stop-hook-enforced
+with zero extra configuration. `-s read-only --ephemeral` make the reviewer
+physically unable to modify files and leave no session file behind. A Stop-hook-enforced
 review gate is documented as an opt-in hardening in a dedicated subsection of
 `docs/workflow/feature-workflow.md`, not wired by default. The model pin will
 rot; `docs/workflow/maintenance.md` owns it (§13, §15).
@@ -685,7 +698,7 @@ development and are gitignored.
 | `.cursor/` | Cursor is not part of the scheme |
 | `dependency_overrides` pins, sqlite3 user_defines | machine/time-specific workarounds that rot |
 | Russian text in shipped files | public template is English |
-| `.codex/hooks.json` with absolute path + duplicated script | rebuilt on the official schema, shared script, relative path |
+| `.codex/hooks.json` with absolute path + duplicated script | rebuilt on the official schema, shared script, git-root-resolved path (Codex runs hooks with the session cwd) |
 | Coverage gates | never existed; decision now recorded in testing/strategy.md |
 
 ## 15. Risks and maintenance
@@ -695,16 +708,19 @@ development and are gitignored.
    remains the enforcement floor if the plugin misbehaves.
 2. **Codex model pin rot** (`gpt-5.6-sol`) — `docs/workflow/maintenance.md`
    owns the update cadence (it survives init; README links to it); the
-   cross-review skill fails honestly if the model is rejected.
+   cross-review skill fails honestly if the model is rejected. The pin lives
+   in `.codex/config.toml` and is read and passed per call by the skill's
+   script (`-c review_model=` / `-m`), never via a Codex profile.
 3. **Patrol ecosystem facts are assumed, not researched** — patrol_finders'
    device-free widget testing, `integration_test/` layout, patrol_cli↔patrol
    version coupling match general knowledge but were not covered by the
    Aug-2026 research pass. Run a short patrol research pass at implementation
    start; pin patrol and patrol_cli; cover setup in getting-started
    troubleshooting.
-4. **Codex hook semantics unverified** — matcher names for file-editing
-   tools, blocking exit codes, relative-path resolution (§6 implementation
-   note); freshness gate is the backstop.
+4. **Codex hook semantics** — resolved: verified end-to-end in the M4
+   research pass (Codex 0.144.6 blocked a generated-file write through
+   `.codex/hooks.json`) and reproduced in Task 2's smoke; the freshness gate
+   remains the backstop.
 5. **CI environment assumptions to verify on first runs** — drift on
    `ubuntu-latest` with `libsqlite3-dev` (the reference repo used
    macos-latest + a sqlite3 amalgamation for machine-specific reasons we

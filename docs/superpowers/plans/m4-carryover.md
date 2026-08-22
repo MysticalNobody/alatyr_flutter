@@ -1,46 +1,8 @@
-# Carryover into M4/M5 planning (from M3)
+# Carryover into M5 planning (from M3/M4)
 
-Obligations that survived M3. The M4 and M5 plans MUST pick these up; delete
+Obligations that survived M3 and M4 (the M4 section from `m3-carryover.md`
+is closed by Tasks 1-7 and dropped). The M5 plan MUST pick these up; delete
 entries as they land.
-
-## M4 (agent harness)
-
-- `docs/workflow/getting-started.md` must cover: first `flutter test` of
-  data_local downloads sqlite3's prebuilt library through the package's Dart
-  hook (network once, cached under `.dart_tool/hooks_runner/`); Apple targets
-  need `keychain-access-groups` entitlements (shipped for macOS); Linux needs
-  `libsecret-1-dev` + a secret service for data_secure.
-- `docs/workflow/maintenance.md` owns the codegen-stack ceiling: freezed
-  3.2.5 caps `analyzer <11`, which holds drift_dev at 2.34.0 and build_runner
-  at 2.15.1 workspace-wide; re-check on every freezed release.
-- `docs/testing/widget-test-guardrails.md`: the patrol `#` selector maps to
-  `ValueKey<String>` only; `BlocProvider(create:)` is lazy; dispose a
-  per-test `GoRouter` in `tearDown`; adapter methods over plugins are `async`
-  so sync throws become rejected futures.
-- `.claude/rules/widgets.md`: `AppChoiceTile` requires its key; document the
-  `settings.*` namespace pattern as the template for new features.
-- `docs/testing/widget-test-guardrails.md` (the FakeAsync rules, verified in
-  M3's plan challenge): never await, via `tearDown`/`addTearDown`, a future
-  whose completion depends on objects created inside a `testWidgets` body
-  (`Bloc.close()`, `StreamController.close()`, drift `close()`) — let the
-  tree own blocs, use `unawaited(...)` closes; never `await` a drift-backed
-  stream (`.first`, `await for`) inside the body — assert through `read()`;
-  drift schedules a zero-duration timer when a watch subscription is
-  cancelled, so drift-backed widget tests end with an explicit unmount +
-  `pump(Duration.zero)`.
-- `docs/workflow/getting-started.md`: web persistence needs drift's
-  `sqlite3.wasm` + `drift_worker.js` next to `index.html` (M5 ships them);
-  Apple platforms ship `keychain-access-groups` with an empty array - put
-  the App Group name into it when App Groups are enabled.
-- `docs/architecture/02-package-graph.md`: `banned_packages` governs direct
-  pubspec declarations and imports only; transitive presence of a banned
-  package through a canonical package is allowed by design (`provider` sits
-  in the root `pubspec.lock` transitively via `flutter_bloc` — no workspace
-  member declares or imports it, so the graph rules are unaffected).
-- `docs/testing/widget-test-guardrails.md` / feature_settings exemplar:
-  rewrite the three wall-clock-timed bloc tests (slow-save ordering,
-  save-after-close, 30/80/20/40 ms) to Completer-driven ordering so CI load
-  cannot flake them.
 
 ## M5 (instantiation + e2e)
 
@@ -79,6 +41,29 @@ entries as they land.
   M5 adds binary fixtures or assets under `packages/`, `lints/` or `tool/`,
   switch to `utf8.decode(bytes, allowMalformed: true)` or restrict the scan
   to text extensions.
+- `docs/reference/critical_flows.md` ships the table format and an empty
+  table; M5 adds the first row (`app/integration_test/...`) together with
+  the gate's registry-check stage and the `e2e.sh`/`e2e.yaml` runner.
+- `tool/init.dart` must keep `AGENTS.md`, `CLAUDE.md`, `.claude/`,
+  `.codex/` and `tool/hooks/` product-neutral (no identity tokens are in
+  them today; `test/template_identity_test.dart` scans `packages/`,
+  `lints/`, `tool/` — extend it to `AGENTS.md`, `CLAUDE.md`, `.claude/`,
+  `.codex/`) and must delete `docs/superpowers/` and this file.
+- The Codex PostToolUse payload for `apply_patch` was not captured; a
+  Codex-side `dart format` hook (mirroring `.claude/settings.json`'s
+  PostToolUse) is not shipped - add it once the payload shape is verified.
+- `.claude/settings.json` permissions allow `tool/e2e.sh` ahead of its
+  existence; M5 adds the script.
+
+- `test/harness_test.dart`'s temp-repo group (codex_review.sh preconditions)
+  inherits the developer's global git config; a `commit.gpgsign = true`
+  without a signer, a global `core.hooksPath` or an `init.templateDir` fails
+  its setUp. Harden before the template goes public: run those `git` calls
+  with `-c commit.gpgsign=false -c core.hooksPath=/dev/null` or set
+  `GIT_CONFIG_GLOBAL=/dev/null` in the test's env.
+- `codex_review.sh --base --structured` treats `--structured` as the ref
+  (exit 3 "does not exist") instead of usage exit 2; add `[[ $2 != --* ]]`
+  to the argument guard.
 
 ## Recorded as accepted (no action planned)
 
@@ -96,3 +81,18 @@ entries as they land.
   with a secret receives it through its module factory.
 - The settings failure banner has no dismissal path (stays until the stored
   value actually changes) - product decision.
+- Codex hooks depend on per-checkout trust (`/hooks`); CI runners and fresh
+  clones are unprotected by the hook until trusted - the cold-rebuild
+  freshness gate is the enforcement of record for invariant 5.
+- The Stop-hook review gate is documented as opt-in hardening, not wired.
+- `guard_generated.sh` reads the first `file_path` of a Claude payload and
+  parses patch headers only for `apply_patch`; a JSON parser would be
+  exact, but bash + sed keeps the hook dependency-free.
+- Both agent-side guards bind tools, not the shell. `guard_generated.sh`
+  fires on `Edit`/`Write`/`apply_patch`, so a generated file rewritten from
+  Bash (`sed -i`, `cat >`) slips past it - the cold-rebuild
+  codegen-freshness stage is the enforcement of record. Likewise the
+  `Read(/.dart-defines/*.env)` deny in `.claude/settings.json` binds
+  Claude's `Read` tool only (a shell `cat` is not covered, and Codex has no
+  equivalent); the secret-leak scan plus the never-in-repo rule are the
+  backstops.

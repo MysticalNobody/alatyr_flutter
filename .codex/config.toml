@@ -1,0 +1,11 @@
+# Project-scoped Codex config. Loads only after the project is trusted
+# (first `codex` run in this repo asks; or `[projects."<abs path>"]
+# trust_level = "trusted"` in ~/.codex/config.toml). These keys apply to
+# EVERY Codex session in this repository, implementation included - so only
+# the review model pin lives here. Reviewer-role constraints (read-only
+# sandbox, high reasoning effort, no user skills) are passed per call by
+# .claude/skills/cross-review/codex_review.sh, which also reads the model
+# pin below. NOTE: profile tables in project config are ignored by Codex
+# >= 0.134 (profiles are per-user files); do not add one. Model pin
+# maintenance: docs/workflow/maintenance.md.
+review_model = "gpt-5.6-sol"
