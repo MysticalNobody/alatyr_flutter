@@ -9,6 +9,18 @@ ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tool/common.sh"
 cd "$ROOT_DIR"
 
+# --cold: drop each package's build_runner cache first. The gate's freshness
+# stage needs a REAL regeneration: a warm cache only re-runs builders whose
+# tracked inputs changed, so a hand-edited generated file would survive the
+# before/after snapshot compare (found in M3, Task 5 review). Developers
+# keep the warm default.
+COLD=false
+case "${1:-}" in
+  --cold) COLD=true ;;
+  "") ;;
+  *) echo "usage: tool/codegen.sh [--cold]" >&2; exit 2 ;;
+esac
+
 echo "    resolve workspace dependencies"
 run_dart pub get
 
@@ -19,6 +31,7 @@ while IFS= read -r package_dir; do
   [[ -z "$package_dir" ]] && continue
   echo "    codegen ${package_dir}"
   ( cd "$ROOT_DIR/$package_dir"
+    if [[ "$COLD" == "true" ]]; then rm -rf .dart_tool/build; fi
     # build_runner >= 2.15 removed --delete-conflicting-outputs and
     # --low-resources-mode (passing them only prints a warning); conflicting
     # outputs are now always overwritten.

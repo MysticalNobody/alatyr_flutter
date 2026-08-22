@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # THE quality gate. Tiers:
 #   --fast            format + graph + imports (~seconds, agent inner loop)
-#   (default: full)   fast + codegen freshness + transitive purity
+#   (default: full)   fast + codegen freshness (cold rebuild) + transitive purity
 #                     (resolved graph) + toolchain analyze/test
 #                     + per-package dart-analyze/test + lint-plugin
 #                     analyze/test/integration fixture
@@ -104,8 +104,8 @@ if [[ "$MODE" == "package" ]]; then
   echo "OK (package $TARGET)"; exit 0
 fi
 
-echo "==> Codegen (freshness check)"
-bash "$ROOT_DIR/tool/codegen.sh"
+echo "==> Codegen (freshness check, cold rebuild)"
+bash "$ROOT_DIR/tool/codegen.sh" --cold
 
 if [[ -n "$before_snapshot" ]]; then
   after_snapshot="$(mktemp)"; temporary_files+=("$after_snapshot")
