@@ -6,7 +6,10 @@ plugins {
 
 android {
     namespace = "dev.alatyr.starter"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_secure_storage 11 ships AAR metadata requiring compileSdk 37;
+    // Flutter 3.44.9 defaults to 36 (flutter.compileSdkVersion). See
+    // docs/workflow/maintenance.md.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
@@ -23,6 +26,13 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        // Patrol e2e (tool/e2e.sh). The orchestrator (below) runs every Dart
+        // test in its own process; that process boundary is the "restart"
+        // of the critical flows. Patrol's docs also set
+        // testInstrumentationRunnerArguments["clearPackageData"] = "true" -
+        // deliberately NOT here: it would wipe app data between the tests
+        // and with it the persisted state the restart flow asserts on.
+        testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
     }
 
     buildTypes {
@@ -31,6 +41,10 @@ android {
             // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+
+    testOptions {
+        execution = "ANDROIDX_TEST_ORCHESTRATOR"
     }
 }
 
@@ -42,4 +56,8 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    androidTestUtil("androidx.test:orchestrator:1.5.1")
 }

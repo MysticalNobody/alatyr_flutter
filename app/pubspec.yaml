@@ -21,5 +21,13 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   patrol_finders: ^3.6.0
+  patrol: ^4.9.0
 flutter:
   uses-material-design: true
+patrol:
+  app_name: Alatyr Starter
+  test_directory: integration_test
+  android:
+    package_name: dev.alatyr.starter
+  ios:
+    bundle_id: dev.alatyr.starter
