@@ -66,9 +66,9 @@ One page per topic, newest facts first, always true of the current commit:
 - [reference/package_graph.yaml](reference/package_graph.yaml) — the
   machine-readable dependency graph every enforcer parses.
 - [reference/critical_flows.md](reference/critical_flows.md) — the e2e
-  test-plan registry; gate-checked from M5 on.
+  test-plan registry; `tool/checks.sh` gate-checks every row.
 - [reference/ci_contract.md](reference/ci_contract.md) — what CI runs
-  and owns, what `ci.yml` does today, and what lands in M5.
+  and owns: `ci.yml`, `e2e.yml`, `template-smoke.yml`.
 - [reference/feature_package_skeletons.md](reference/feature_package_skeletons.md)
   — the file trees the graph-first ritual produces for a new feature
   package pair.

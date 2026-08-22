@@ -82,12 +82,13 @@ void main() {
     () {},
     skip:
         'deliberate: OS-level death is a patrol e2e concern over a '
-        'file-backed AppDatabase closed and reopened from disk - lands in '
-        'M5 as the patrol restart flow registered in '
-        'docs/reference/critical_flows.md. The in-process restart proof '
-        '(a second widget tree + DI graph over the same live connection) '
-        'is app/test/app_test.dart: "a fresh app over the same database '
-        'restores the persisted theme".',
+        'file-backed AppDatabase closed and reopened from disk - proved by '
+        'the fresh-process bonus test in '
+        'app/integration_test/settings_theme_test.dart, alongside the '
+        'registered flow in docs/reference/critical_flows.md. The '
+        'in-process restart proof (a second widget tree + DI graph over '
+        'the same live connection) is app/test/app_test.dart: "a fresh '
+        'app over the same database restores the persisted theme".',
   );
 
   patrolWidgetTest(

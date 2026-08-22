@@ -30,7 +30,7 @@ real in-memory drift database, structural widget tests, a module assembly
 test, an app bootstrap smoke test) plus the adversarial pass, not from
 chasing a coverage number. Patrol finders being the only widget-test idiom
 means the same key-based addressing (`SettingsKeys`) widget tests use
-today will carry over unchanged to patrol e2e once it lands (M5).
+carries over unchanged into patrol e2e (`app/integration_test/`).
 Deliberately uncovered scenarios are visible in the diff as skip stubs,
 not silently absent.
 
@@ -40,8 +40,8 @@ not silently absent.
   behavior coverage and slow the gate without a corresponding honesty gain.
 - **An external test-management system** — rejected; it adds credentials
   and a second source of truth that drifts silently and is invisible to
-  agents, the gate, and review. Test names plus skip stubs are the record
-  today; the critical-flows registry (M5) joins them as the e2e plan.
+  agents, the gate, and review. Test names plus skip stubs are the record;
+  the critical-flows registry joins them as the e2e plan.
 - **Golden tests in the default gate** — rejected; cross-engine visual
   drift is real and would make the gate flaky for reasons unrelated to
   the code under test. Goldens remain available, opt-in, engine-pinned.

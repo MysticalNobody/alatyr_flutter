@@ -58,8 +58,8 @@ constructs implementations (`app/lib/bootstrap/`) and assembles the router.
 | 4 | secret-leak scan over `data_local` (`verify_imports`) + `Read` deny on `.dart-defines/*.env` + the review rubric (full semantic tracking is review-owned — accepted gap) |
 | 5 | `tool/hooks/guard_generated.sh` in both agents + the codegen-freshness stage (cold rebuild) |
 | 6 | human graph-diff approval |
-| 7 | review rubric + patrol e2e (lands in M5; no lint rule yet — accepted gap) |
-| 8 | critical-flows registry check in the gate (lands in M5) + review rubric |
+| 7 | review rubric + patrol e2e (`tool/e2e.sh`; no lint rule yet — accepted gap) |
+| 8 | critical-flows registry check in the gate + review rubric |
 
 ## 5. The graph-first feature ritual
 
@@ -75,7 +75,7 @@ adversarial pass, cross-review and the behavioral check close the loop.
 1. `tool/checks.sh` (full) is green.
 2. Adversarial pass done: test-breaker scenarios are covered by tests or
    skipped in code with a reason — `skip: 'deliberate: …'`.
-3. `tool/e2e.sh` is green when critical flows are touched (lands in M5).
+3. `tool/e2e.sh` is green when critical flows are touched.
 4. Cross-review completed; no open P0/P1 finding — each is fixed or
    rebutted with recorded reasoning. If review is honestly impossible
    (`codex` absent, model rejected), the human waives this item explicitly
@@ -98,9 +98,13 @@ and never silently skipped.
 
 `tool/checks.sh --fast` (format → graph → imports; the inner loop) ·
 `tool/checks.sh` (full gate) · `tool/checks.sh --package <dir>` ·
-`tool/codegen.sh [--cold]` · `tool/e2e.sh` and `dart run tool/init.dart`
-(both land in M5). A PostToolUse hook formats every Dart file you edit
-(both agents); do not fight it — never re-patch to undo formatting.
+`tool/codegen.sh [--cold]` · `tool/e2e.sh` (patrol e2e; device spec in
+`tool/e2e.yaml`). `dart run tool/init.dart --name … --org …` is
+template-repo only: it renames the placeholder identity, then deletes
+itself, its tests, and `docs/superpowers/` — read this from an
+instantiated project and that command is gone on purpose, not missing. A
+PostToolUse hook formats every Dart file you edit (both agents); do not
+fight it — never re-patch to undo formatting.
 
 ## Code Review Rules
 

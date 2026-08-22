@@ -1,7 +1,7 @@
 # Alatyr — Flutter Starter for AI-Agent Development: Design
 
 - **Date:** 2026-08-13
-- **Status:** approved; implementation in progress (M4 done)
+- **Status:** approved; implementation complete (M5 done)
 - **Scheme:** Claude Code implements, OpenAI Codex cross-reviews
 
 ## 1. Purpose and constraints
@@ -83,6 +83,12 @@ alatyr_flutter/
 │   ├── codegen.sh             #   workspace-wide build_runner
 │   ├── e2e.sh                 #   patrol runner (find-or-create device)
 │   ├── e2e.yaml               #   declarative e2e device profiles (committed)
+│   ├── e2e_config.dart        #   typed tool/e2e.yaml loader (KEY='value' lines)
+│   ├── e2e_pick_device.dart   #   iOS: matches a simulator by name + runtime id
+│   ├── e2e_pick_runtime.dart  #   iOS: newest installed runtime, matched by major version
+│   ├── template_smoke.sh      #   copy -> init.dart -> full gate (template-repo only)
+│   ├── web_smoke.sh           #   flutter build web -> web_smoke.mjs
+│   ├── web_smoke.mjs          #   headless-Chrome reload-persistence proof
 │   ├── init.dart              #   one-shot template instantiation (self-deleting)
 │   ├── verify_dependencies.dart
 │   ├── verify_imports.dart
@@ -457,10 +463,19 @@ widget tests via patrol finders, repository tests on in-memory drift
 (`NativeDatabase.memory()`), module assembly test, app bootstrap smoke test,
 the in-process "restart" case (a second widget tree + DI graph over the same
 in-memory database) as the widget-level twin of the patrol restart flow,
-one patrol e2e (launch → settings → toggle theme → restart → theme persisted).
-"Restart" here means re-invoking the app entrypoint within the test (fresh
-widget tree and DI graph, same storage); OS-level process-death testing is out
-of scope — the convention is recorded in `critical_flows.md`.
+and the patrol exemplar itself
+(`app/integration_test/settings_theme_test.dart`: launch → settings →
+choose dark → restart → dark persisted). "Restart" here means re-invoking
+the app entrypoint within the test (fresh widget tree and DI graph, same
+on-disk storage) — this is the registered flow (`critical_flows.md`). The
+same file additionally carries a second, clearly labelled test that runs
+in a genuinely fresh OS process (patrol's own per-test process boundary
+— the Android test orchestrator, `XCUIApplication.launch` on iOS), as a
+bonus proof of real device restart, not the registered flow: both
+platforms execute the two tests in the required order (Android:
+declaration order under the orchestrator; iOS: alphabetical XCTest
+selector order, which the test names are chosen to match), and the
+second test fails loudly if that ordering is ever violated.
 
 Deliberately absent: `domain_core` (would be empty; born via the ritual when
 shared domain types appear), auth/home scaffolds, `data_remote` (born with the
@@ -485,33 +500,57 @@ working app and machine-generate the brick from it).
 | Workspace root name | `alatyr_workspace` |
 
 **`dart run tool/init.dart --name my_app --org com.example
-[--display-name "My App"] [--yes]`:**
+[--display-name "My App"] [--template-url <url>] [--yes]`** (or
+`--print-identity` to print the current placeholder tokens as
+`KEY='value'` lines instead of instantiating — for scripts, like
+`tool/template_smoke.sh`, that must not spell them):
 
-1. Validates inputs (Dart identifier, reverse-domain org).
-2. Whole-token replacement of placeholder identity across the repo (file
-   contents and paths). The tokens legitimately appear only in: `app/` and
-   native shells, root `pubspec.yaml` (workspace name),
-   `docs/reference/package_graph.yaml` (the app entry), and `README.md`.
-   `packages/`, `lints/`, `tool/` are product-neutral by construction, and a
-   template test asserts they contain no identity tokens.
-3. Android: moves package directories, rewrites `MainActivity` package and
-   Gradle `applicationId`/`namespace`.
-4. iOS/macOS: rewrites `PRODUCT_BUNDLE_IDENTIFIER` and display name scoped to
-   app targets only (known third-party-tool pitfalls — over-renaming extension
-   targets, missing `CFBundleIdentifier` customizations — are in the fixture
-   test matrix).
-5. Web/Linux/Windows: manifest/title/binary-name updates.
-6. Replaces `README.md` with a product stub (link back to Alatyr), removes
-   init machinery (`tool/init.dart`, `tool/src/init_*`, their tests),
-   `template-smoke.yml`, and this spec's `docs/superpowers/` history.
+1. Validates inputs: `--name` a lowercase Dart identifier; `--org` a
+   reverse-domain of lowercase-letter/digit segments (no underscores —
+   the org goes verbatim into Apple bundle identifiers); `--display-name`
+   defaults to the title-cased `--name` (`my_app` → `My App`) and, given
+   or defaulted, is restricted to letters, digits, spaces, dots and
+   hyphens (it lands unescaped in Dart strings, XML, JSON, YAML, C++ and
+   a Windows resource script).
+2. Derives the *current* placeholder identity from the app shell and
+   `package_graph.yaml` rather than hardcoding it (`tool/` may not spell
+   the tokens — `test/template_identity_test.dart` enforces it), then
+   whole-token-replaces it across the repo (file contents and paths). The
+   tokens legitimately appear only in: `app/` and native shells, root
+   `pubspec.yaml` (workspace name), `docs/reference/package_graph.yaml`
+   (the app entry), and `README.md`. `packages/`, `lints/`, `tool/` are
+   product-neutral by construction; `docs/adr/` is never rewritten (ADRs
+   record the placeholder identity as history, not a live value).
+3. Android: moves package directories, rewrites `MainActivity` package
+   and Gradle `applicationId`/`namespace` to the snake-case id
+   (`org.name`).
+4. iOS/macOS: rewrites `PRODUCT_BUNDLE_IDENTIFIER` to the camelCase id
+   (`org.nameCamel` — Apple ids forbid underscores) and display name,
+   scoped to app targets only (known third-party-tool pitfalls —
+   over-renaming extension targets, missing `CFBundleIdentifier`
+   customizations — are in the fixture test matrix).
+5. Web/Linux/Windows: manifest/title/binary-name updates, snake-case id.
+6. Replaces `README.md` with a product stub (links back to Alatyr when
+   `--template-url` is given, names it in plain text otherwise), and
+   deletes the fixed list of template-only paths (`templateOnlyPaths` in
+   `tool/src/init_rewrite.dart`: `tool/init.dart`, `tool/src/init_*`,
+   their tests, `test/fixtures/init/`, `template-smoke.yml`, and this
+   spec's `docs/superpowers/` history) — a template-only file added later
+   without updating that list survives init undetected, beyond what the
+   template smoke's own post-init assertions happen to check.
 7. Runs `dart format` over modified Dart files (token replacement can change
    line lengths; the format gate must stay green — the fixture matrix includes
    long-name cases), then `dart pub get` + `tool/checks.sh --fast` as a
    post-init smoke.
 
-Post-init identity changes are a manual operation, as in any Flutter project
-(deliberate YAGNI). `tool/init.dart` logic lives in `tool/src/` and is covered
-by fixture tests, including pbxproj edge cases.
+Prints the rename plan and asks to confirm before touching anything
+(`--yes` skips the prompt). Requires a git checkout (`git ls-files`
+enumerates the files to rewrite) — "Use this template" and
+`tool/template_smoke.sh` both give you one; a plain archive download does
+not, and the tool says so rather than guessing. Post-init identity
+changes are a manual operation, as in any Flutter project (deliberate
+YAGNI). `tool/init.dart` logic lives in `tool/src/` and is covered by
+fixture tests, including pbxproj edge cases.
 
 ## 10. Testing and verification
 
@@ -553,7 +592,9 @@ android:
 ios:
   simulator_name: e2e_iphone
   device_type: iPhone 16
-  runtime: iOS 18.0
+  runtime: iOS 18.0   # matched by MAJOR version: the newest installed
+                      # "iOS 18.x" runtime is used, since an exact 18.0
+                      # runtime is rarely what a developer machine has
 ```
 
 `tool/e2e.sh [android|ios] [-t <test>] [--device <id>] [--list]`: read config →
@@ -601,19 +642,25 @@ e2e in `checks.sh`.
 
 ## 11. CI
 
-- **`ci.yml`** — PRs + main. `ubuntu-latest` (+ `libsqlite3-dev` for drift
-  tests — standard drift practice, verify on first CI run), Flutter via
-  `flutter-action` pinned from `.fvmrc`, then exactly: `tool/checks.sh`
-  (GitHub sets `CI=true`; checks.sh detects it). CI owns no logic
-  (`docs/reference/ci_contract.md`).
-- **`e2e.yml`** — PRs to main. GitHub-hosted x86_64 ubuntu runner with KVM
-  enabled, `tool/e2e.sh android` with the same committed device spec (x86_64
-  system image per `e2e.yaml`). KVM/emulator viability on hosted runners is
-  verified during implementation (§15).
-- **`template-smoke.yml`** — template-repo only: copy the tree → `git init &&
-  git add -A` in the copy (the freshness stage requires a git worktree) →
-  `init.dart --name fixture_app --org dev.fixture --yes` → full `checks.sh`
-  on the result. Deleted by init.
+- **`ci.yml`** — PRs + main. `ubuntu-latest`, no apt step: drift's
+  `sqlite3` dependency provisions its native library itself, through a
+  Dart build hook that downloads a sha-pinned prebuilt from `github.com`
+  at test time (outbound HTTPS required; `libsqlite3-dev` is not
+  installed). Flutter via `flutter-action` pinned from `.fvmrc`, then
+  exactly: `tool/checks.sh` (GitHub sets `CI=true`; checks.sh detects
+  it). CI owns no logic (`docs/reference/ci_contract.md`).
+- **`e2e.yml`** — PRs to main + `workflow_dispatch`. GitHub-hosted
+  x86_64 ubuntu runner with KVM enabled, `tool/e2e.sh android` with the
+  same committed device spec (x86_64 system image per `e2e.yaml`). Runs
+  with `continue-on-error: true` — advisory until hosted-runner
+  Android-emulator viability (KVM, boot time, AVD cache correctness) has
+  a track record on real PRs (§15 risk 5); flip it to required once it
+  does.
+- **`template-smoke.yml`** — template-repo only: `tool/template_smoke.sh`
+  copies the tree, `git init && git add -A` in the copy (the freshness
+  stage requires a git worktree), `init.dart --name fixture_app --org
+  dev.fixture --yes`, then full `checks.sh` on the result. Deleted by
+  init (it has no meaning once a repo is instantiated).
 - Claude GitHub bot and Codex cloud PR review are **documented, not shipped**
   (they need per-user secrets/app installs; Codex cloud needs zero workflow —
   installing the GitHub app already picks up `## Code Review Rules`).
@@ -711,22 +758,25 @@ development and are gitignored.
    cross-review skill fails honestly if the model is rejected. The pin lives
    in `.codex/config.toml` and is read and passed per call by the skill's
    script (`-c review_model=` / `-m`), never via a Codex profile.
-3. **Patrol ecosystem facts are assumed, not researched** — patrol_finders'
-   device-free widget testing, `integration_test/` layout, patrol_cli↔patrol
-   version coupling match general knowledge but were not covered by the
-   Aug-2026 research pass. Run a short patrol research pass at implementation
-   start; pin patrol and patrol_cli; cover setup in getting-started
-   troubleshooting.
+3. **Patrol ecosystem facts** — resolved: verified against pub.dev and the
+   patrol compatibility table during M5 implementation (`patrol 4.9.0` ↔
+   `patrol_cli 4.7.0`, minimum Flutter `3.32`); pinned in `app/pubspec.yaml`
+   and `tool/e2e.sh`/`.github/workflows/e2e.yml`
+   (`PATROL_CLI_VERSION`); setup covered in getting-started troubleshooting.
 4. **Codex hook semantics** — resolved: verified end-to-end in the M4
    research pass (Codex 0.144.6 blocked a generated-file write through
    `.codex/hooks.json`) and reproduced in Task 2's smoke; the freshness gate
    remains the backstop.
-5. **CI environment assumptions to verify on first runs** — drift on
-   `ubuntu-latest` with `libsqlite3-dev` (the reference repo used
-   macos-latest + a sqlite3 amalgamation for machine-specific reasons we
-   deliberately do not carry), and KVM/emulator viability for `e2e.yml` on
-   hosted x86_64 runners. Both stated in `ci_contract.md` so failures are
-   diagnosable.
+5. **CI environment assumptions to verify on first runs** — open. Drift on
+   `ubuntu-latest` no longer needs `libsqlite3-dev`: source-reading the
+   `sqlite3` package's build hook during M5 showed it downloads a
+   sha-pinned prebuilt from `github.com` at test time instead (outbound
+   HTTPS required); a first Linux CI run still confirms this in practice.
+   KVM/emulator viability for `e2e.yml` on hosted x86_64 runners remains
+   genuinely unverified — this session never pushes, so it cannot be
+   settled here; the workflow stays advisory (`continue-on-error: true`)
+   until it is green on a handful of real PRs. Both stated in
+   `ci_contract.md` so failures are diagnosable.
 6. **Flutter/Dart major upgrades** — a documented upgrade checklist in
    `docs/workflow/maintenance.md`: bump `.fvmrc`, re-validate the plugin pin,
    re-run the full gate + template smoke.

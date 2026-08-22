@@ -14,9 +14,28 @@ Bump the version in `.fvmrc`, then:
    `lints/pubspec.yaml`'s exact constraint and re-run the lint-plugin
    stage of the gate.
 2. Run the full gate: `tool/checks.sh`.
-3. Run a template smoke once `tool/init.dart` exists (M5): instantiate a
-   fixture copy and run the gate on it too — a Flutter bump can shift
-   generated output in ways only a real `init` run surfaces.
+3. Run a template smoke: `tool/template_smoke.sh` instantiates a fixture
+   copy and runs the gate on it too — a Flutter bump can shift generated
+   output in ways only a real `init` run surfaces.
+4. Re-run `tool/e2e.sh` on both platforms it can reach locally — a
+   Flutter bump can shift patrol/emulator behavior independently of the
+   unit-test gate.
+
+## Android `compileSdk 37`
+
+`app/android/app/build.gradle.kts` pins `compileSdk = 37`, above
+Flutter 3.44.9's own `flutter.compileSdkVersion` default of 36:
+`flutter_secure_storage 11` ships AAR metadata that requires it.
+`app/android/gradle.properties` sets
+`android.suppressUnsupportedCompileSdk=37.0` to silence AGP 9.0.1's
+warning that it has only validated compile SDKs up to 36.1 — by design,
+not a bug to fix. Building against `compileSdk 37` needs the
+`platforms;android-37` SDK component installed locally (see
+`docs/workflow/getting-started.md`, Prerequisites); this is independent
+of whatever system image `tool/e2e.yaml` pins for the emulator (`34`
+today). Revisit this pin on every Flutter bump: once
+`flutter.compileSdkVersion` reaches 37, both the explicit `compileSdk`
+line and the `suppressUnsupportedCompileSdk` override can be dropped.
 
 ## The codegen ceiling
 
@@ -32,10 +51,14 @@ first, see whether its `analyzer` constraint relaxed, then let
 
 Verified against pub.dev and the patrol compatibility table on
 2026-08-21: `patrol 4.9.0` ↔ `patrol_cli 4.7.0`, minimum Flutter `3.32`.
-Only `patrol_finders 3.6.0` is pinned today (the widget-test half, already
-in use); `patrol` itself (the e2e binary + `patrol_cli`) is added in M5.
-When M5 lands, pin all three together and re-verify the compatibility
-table — patrol's finder API and its e2e runner version in lockstep.
+All three are pinned together: `patrol_finders 3.6.0` and `patrol 4.9.0`
+in `app/pubspec.yaml`, `patrol_cli 4.7.0` as the global activation
+`tool/e2e.sh` checks for at run time. The `patrol_cli` version itself is
+pinned in **two** places that must move together on any bump:
+`PATROL_CLI_VERSION` in `tool/e2e.sh` (checked against `patrol
+--version`) and the same literal in `.github/workflows/e2e.yml`'s
+activate step. Re-verify the full compatibility table on any bump —
+patrol's finder API and its e2e runner version in lockstep.
 
 ## Codex model and CLI
 
@@ -94,7 +117,11 @@ committing.
    version).
 2. `fvm flutter pub get`.
 3. `tool/checks.sh` (full gate).
-4. Fix whatever the gate surfaces.
-5. Record what changed and why in this file, next to the relevant
+4. `tool/template_smoke.sh` if the bump could shift generated output
+   (Flutter, `init.dart` itself); `tool/e2e.sh` on whatever platforms are
+   reachable locally if the bump touches patrol, `patrol_cli`, or the
+   Android/iOS toolchain.
+5. Fix whatever the gate, the smoke, or e2e surfaces.
+6. Record what changed and why in this file, next to the relevant
    section, so the next upgrade starts from the same evidence instead of
    re-deriving it.
