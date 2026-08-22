@@ -52,16 +52,21 @@ final class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     SettingsThemeModeChanged event,
     Emitter<SettingsState> emit,
   ) async {
-    final current = state;
-    if (current is! SettingsReady) return;
+    if (state is! SettingsReady) return;
     final result = await _repository.saveThemeMode(event.themeMode);
     // close() drains the in-flight sequential handler before cancelling
     // its emitter, so without this guard a save finishing during close()
     // would still emit. `isClosed` flips synchronously when close() starts.
     if (isClosed) return;
+    // Re-read: the stream may have emitted a newer mode while the save was
+    // in flight. Reporting the failure on a pre-await snapshot would roll
+    // the UI back to a mode persistence no longer holds, and `.distinct()`
+    // would never correct it.
+    final latest = state;
+    if (latest is! SettingsReady) return;
     result.fold(
       ok: (_) {},
-      err: (failure) => emit(current.copyWith(lastFailure: failure)),
+      err: (failure) => emit(latest.copyWith(lastFailure: failure)),
     );
   }
 }

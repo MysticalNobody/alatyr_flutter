@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:data_local/data_local.dart';
 import 'package:data_local/testing.dart';
 import 'package:feature_settings/feature_settings.dart';
+import 'package:feature_settings/src/drift_settings_repository.dart';
 import 'package:feature_settings_api/feature_settings_api.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -42,7 +43,7 @@ void main() {
     'api reports system until something is stored, then the stored mode',
     () async {
       expect(await module.api.watchThemeMode().first, ThemeMode.system);
-      await db.keyValueDao.write('settings.theme_mode', 'dark');
+      await db.keyValueDao.write(DriftSettingsRepository.themeModeKey, 'dark');
       expect(await module.api.watchThemeMode().first, ThemeMode.dark);
     },
   );
@@ -63,7 +64,9 @@ void main() {
       // (`.first`) inside the body: that await resumes outside the FakeAsync
       // zone and strands every later pump (verified hang). The api stream is
       // covered by the plain test above.
-      final stored = await db.keyValueDao.read('settings.theme_mode');
+      final stored = await db.keyValueDao.read(
+        DriftSettingsRepository.themeModeKey,
+      );
       await _unmount($);
 
       expect(stored, 'dark');

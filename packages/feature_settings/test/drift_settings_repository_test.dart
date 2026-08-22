@@ -9,6 +9,20 @@ import 'package:mocktail/mocktail.dart';
 
 class _MockDao extends Mock implements KeyValueDao {}
 
+/// Records what the repository logs, so the `logger:` seam is asserted and
+/// not merely wired.
+final class _RecordingLogger extends AppLogger {
+  final List<({LogLevel level, String message})> records = [];
+
+  @override
+  void log(
+    LogLevel level,
+    String message, {
+    Object? error,
+    StackTrace? stackTrace,
+  }) => records.add((level: level, message: message));
+}
+
 void main() {
   group('on a real in-memory database', () {
     late AppDatabase db;
@@ -32,11 +46,19 @@ void main() {
     test(
       'given stored theme is corrupted, settings falls back to system',
       () async {
+        final recorder = _RecordingLogger();
+        final logged = DriftSettingsRepository(
+          db.keyValueDao,
+          logger: recorder,
+        );
         await db.keyValueDao.write(
           DriftSettingsRepository.themeModeKey,
           'purple',
         );
-        expect(await repository.watchThemeMode().first, ThemeMode.system);
+        expect(await logged.watchThemeMode().first, ThemeMode.system);
+        expect(recorder.records, hasLength(1));
+        expect(recorder.records.single.level, LogLevel.warn);
+        expect(recorder.records.single.message, contains('purple'));
       },
     );
 

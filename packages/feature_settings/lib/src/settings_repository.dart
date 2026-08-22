@@ -8,5 +8,7 @@ abstract interface class SettingsRepository {
   /// or corrupted values map to [ThemeMode.system].
   Stream<ThemeMode> watchThemeMode();
 
+  /// Converts exceptions only - `Error`s (e.g. drift's `StateError` on a
+  /// closed database) are programming faults and propagate.
   Future<Result<void>> saveThemeMode(ThemeMode mode);
 }

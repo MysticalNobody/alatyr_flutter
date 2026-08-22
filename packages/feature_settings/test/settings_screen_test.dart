@@ -14,19 +14,28 @@ import 'package:patrol_finders/patrol_finders.dart';
 /// Deterministic in-memory repository: a broadcast stream that replays the
 /// current value to new listeners, and an optional forced save failure.
 final class _FakeRepository implements SettingsRepository {
-  _FakeRepository({this.failSaves = false, this.neverLoads = false});
+  _FakeRepository({
+    this.failSaves = false,
+    this.neverLoads = false,
+    this.failLoad = false,
+  });
 
   final bool failSaves;
 
   /// A load that never completes (storage hanging): the screen stays in
   /// its loading state for the whole test.
   final bool neverLoads;
+
+  /// Storage dying right after the first read: the bloc keeps the last mode
+  /// and the screen shows the load message.
+  final bool failLoad;
   ThemeMode _current = ThemeMode.system;
   final _changes = StreamController<ThemeMode>.broadcast();
 
   @override
   Stream<ThemeMode> watchThemeMode() async* {
     if (!neverLoads) yield _current;
+    if (failLoad) throw StateError('storage gone');
     yield* _changes.stream;
   }
 
@@ -99,6 +108,18 @@ void main() {
         ).$('Could not save your choice. Please try again.'),
         findsOneWidget,
       );
+    },
+  );
+
+  patrolWidgetTest(
+    'given the load fails, the load message is shown and system stays selected',
+    ($) async {
+      await _pump($, _FakeRepository(failLoad: true));
+      expect(
+        $(SettingsKeys.failureBanner).$('Could not read your saved settings.'),
+        findsOneWidget,
+      );
+      expect(_isSelected($, ThemeMode.system), isTrue);
     },
   );
 

@@ -16,6 +16,7 @@ void main() {
   late _MockRepository repository;
   late StreamController<ThemeMode> modes;
   late List<ThemeMode> completedSaves;
+  late Completer<Result<void>> pendingSave;
 
   setUpAll(() => registerFallbackValue(ThemeMode.system));
 
@@ -171,6 +172,40 @@ void main() {
   );
 
   blocTest<SettingsBloc, SettingsState>(
+    'a mode that arrives while a save is pending is kept when that save fails',
+    setUp: () {
+      pendingSave = Completer<Result<void>>();
+      when(
+        () => repository.saveThemeMode(ThemeMode.light),
+      ).thenAnswer((_) => pendingSave.future);
+    },
+    build: () => SettingsBloc(repository),
+    // Ordering is driven by the completer, never by wall-clock delays: the
+    // `dark` emission lands while the `light` save is still in flight.
+    act: (bloc) async {
+      bloc.add(const SettingsStarted());
+      modes.add(ThemeMode.system);
+      await Future<void>.delayed(Duration.zero);
+      bloc.add(const SettingsThemeModeChanged(ThemeMode.light));
+      await Future<void>.delayed(Duration.zero);
+      modes.add(ThemeMode.dark);
+      await Future<void>.delayed(Duration.zero);
+      pendingSave.complete(
+        const Err(AppFailure(code: 'settings.save-failed', message: 'nope')),
+      );
+      await Future<void>.delayed(Duration.zero);
+    },
+    expect: () => const [
+      SettingsState.ready(themeMode: ThemeMode.system),
+      SettingsState.ready(themeMode: ThemeMode.dark),
+      SettingsState.ready(
+        themeMode: ThemeMode.dark,
+        lastFailure: AppFailure(code: 'settings.save-failed', message: 'nope'),
+      ),
+    ],
+  );
+
+  blocTest<SettingsBloc, SettingsState>(
     'a save that completes after close() neither throws nor emits',
     setUp: () {
       when(() => repository.saveThemeMode(any())).thenAnswer(
@@ -202,6 +237,9 @@ void main() {
       modes.add(ThemeMode.dark);
       await Future<void>.delayed(Duration.zero);
       modes.addError(StateError('database gone'));
+      await Future<void>.delayed(Duration.zero);
+      // The third state proves the subscription outlived the error.
+      modes.add(ThemeMode.light);
     },
     expect: () => [
       const SettingsState.ready(themeMode: ThemeMode.dark),
@@ -212,6 +250,7 @@ void main() {
             'lastFailure.code',
             'settings.load-failed',
           ),
+      const SettingsState.ready(themeMode: ThemeMode.light),
     ],
     errors: () => isEmpty,
   );
