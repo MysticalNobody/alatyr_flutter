@@ -11,4 +11,4 @@ major="$(node -p 'process.versions.node.split(".")[0]')"
 [[ "$major" -ge 20 ]] || { echo "web smoke not performed: node >= 20 required, found $(node -v)" >&2; exit 3; }
 ( cd app && run_flutter build web )
 node_flags=(); [[ "$major" -lt 22 ]] && node_flags=(--experimental-websocket)
-node "${node_flags[@]}" tool/web_smoke.mjs app/build/web "${CHROME_BIN:-}"
+node ${node_flags[@]+"${node_flags[@]}"} tool/web_smoke.mjs app/build/web "${CHROME_BIN:-}"
