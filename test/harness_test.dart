@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:test/test.dart';
@@ -56,5 +57,70 @@ void main() {
         reason: '${rule.path}: paths entries are quoted globs',
       );
     }
+  });
+
+  group('hook wiring', () {
+    test(
+      '.claude/settings.json wires both hooks to existing executable scripts and denies env reads',
+      () {
+        final settings =
+            jsonDecode(File('.claude/settings.json').readAsStringSync())
+                as Map<String, dynamic>;
+        final hooks = settings['hooks'] as Map<String, dynamic>;
+        final commands = <String>[];
+        for (final event in ['PreToolUse', 'PostToolUse']) {
+          final groups = hooks[event] as List<dynamic>;
+          for (final group in groups.cast<Map<String, dynamic>>()) {
+            expect(group['matcher'], 'Edit|Write');
+            for (final h
+                in (group['hooks'] as List<dynamic>)
+                    .cast<Map<String, dynamic>>()) {
+              expect(h['type'], 'command');
+              commands.add(h['command'] as String);
+            }
+          }
+        }
+        expect(
+          commands.any((c) => c.contains('tool/hooks/guard_generated.sh')),
+          isTrue,
+        );
+        expect(
+          commands.any((c) => c.contains('tool/hooks/format_dart.sh')),
+          isTrue,
+        );
+        for (final script in [
+          'tool/hooks/guard_generated.sh',
+          'tool/hooks/format_dart.sh',
+        ]) {
+          final stat = File(script).statSync();
+          expect(
+            stat.mode & 0x49,
+            0x49,
+            reason: '$script must be executable (u+x,g+x,o+x)',
+          );
+        }
+        final deny =
+            (settings['permissions'] as Map<String, dynamic>)['deny']
+                as List<dynamic>;
+        expect(deny, contains('Read(/.dart-defines/*.env)'));
+      },
+    );
+
+    test('.codex/hooks.json wires the same guard script via the git root', () {
+      final hooks =
+          jsonDecode(File('.codex/hooks.json').readAsStringSync())
+              as Map<String, dynamic>;
+      final pre =
+          ((hooks['hooks'] as Map<String, dynamic>)['PreToolUse']
+                  as List<dynamic>)
+              .cast<Map<String, dynamic>>();
+      expect(pre.single['matcher'], 'Edit|Write');
+      final command =
+          ((pre.single['hooks'] as List<dynamic>).single
+                  as Map<String, dynamic>)['command']
+              as String;
+      expect(command, contains('git rev-parse --show-toplevel'));
+      expect(command, contains('tool/hooks/guard_generated.sh'));
+    });
   });
 }

@@ -1,0 +1,54 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/tool/hooks/guard_generated.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/tool/hooks/format_dart.sh",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "allow": [
+      "Bash(fvm flutter analyze:*)",
+      "Bash(fvm flutter test:*)",
+      "Bash(fvm flutter pub get:*)",
+      "Bash(fvm dart analyze:*)",
+      "Bash(fvm dart test:*)",
+      "Bash(fvm dart format:*)",
+      "Bash(fvm dart run:*)",
+      "Bash(fvm dart pub get:*)",
+      "Bash(flutter analyze:*)",
+      "Bash(flutter test:*)",
+      "Bash(dart analyze:*)",
+      "Bash(dart test:*)",
+      "Bash(dart format:*)",
+      "Bash(dart run:*)",
+      "Bash(tool/checks.sh:*)",
+      "Bash(tool/codegen.sh:*)",
+      "Bash(tool/e2e.sh:*)",
+      "Bash(bash tool/checks.sh:*)",
+      "Bash(bash tool/codegen.sh:*)"
+    ],
+    "deny": [
+      "Read(/.dart-defines/*.env)"
+    ]
+  }
+}
