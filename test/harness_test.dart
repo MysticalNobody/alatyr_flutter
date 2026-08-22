@@ -123,4 +123,80 @@ void main() {
       expect(command, contains('tool/hooks/guard_generated.sh'));
     });
   });
+
+  group('codex review protocol', () {
+    test(
+      'review-schema.json is a strict object schema everywhere (OpenAI structured outputs)',
+      () {
+        final schema =
+            jsonDecode(File('.codex/review-schema.json').readAsStringSync())
+                as Map<String, dynamic>;
+        void assertStrict(Map<String, dynamic> node, String path) {
+          final type = node['type'];
+          final isObject =
+              type == 'object' || (type is List && type.contains('object'));
+          if (isObject) {
+            expect(
+              node['additionalProperties'],
+              isFalse,
+              reason: '$path: additionalProperties must be false',
+            );
+            final props = (node['properties'] as Map<String, dynamic>?) ?? {};
+            expect(
+              (node['required'] as List<dynamic>?)?.toSet(),
+              props.keys.toSet(),
+              reason: '$path: every property must be required',
+            );
+            for (final entry in props.entries) {
+              assertStrict(
+                entry.value as Map<String, dynamic>,
+                '$path.${entry.key}',
+              );
+            }
+          }
+          if (node['items'] is Map<String, dynamic>) {
+            assertStrict(node['items'] as Map<String, dynamic>, '$path[]');
+          }
+        }
+
+        assertStrict(schema, r'$');
+        expect(
+          ((schema['properties'] as Map<String, dynamic>)['verdict']
+              as Map<String, dynamic>)['enum'],
+          ['approve', 'request_changes'],
+        );
+      },
+    );
+
+    test(
+      '.codex/config.toml pins review_model and carries no profile table (ignored since Codex 0.134)',
+      () {
+        final config = File('.codex/config.toml').readAsStringSync();
+        expect(
+          RegExp(r'^\s*\[profiles', multiLine: true).hasMatch(config),
+          isFalse,
+        );
+        expect(config, contains('review_model = "gpt-5.6-sol"'));
+        // The script reads the same pin, so the two cannot drift.
+        final script = File(
+          '.claude/skills/cross-review/codex_review.sh',
+        ).readAsStringSync();
+        expect(script, contains('review_model'));
+      },
+    );
+
+    test('cross-review skill declares frontmatter and ships its script', () {
+      final skill = File(
+        '.claude/skills/cross-review/SKILL.md',
+      ).readAsLinesSync();
+      expect(skill.first, '---');
+      expect(
+        skill.sublist(1, skill.indexOf('---', 1)).join('\n'),
+        allOf(contains('name: cross-review'), contains('description:')),
+      );
+      final script = File('.claude/skills/cross-review/codex_review.sh');
+      expect(script.existsSync(), isTrue);
+      expect(script.statSync().mode & 0x49, 0x49);
+    });
+  });
 }

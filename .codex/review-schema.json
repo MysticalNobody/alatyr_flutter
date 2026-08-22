@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Alatyr cross-review findings",
+  "type": "object",
+  "properties": {
+    "verdict": { "type": "string", "enum": ["approve", "request_changes"] },
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": { "type": "string" },
+          "body": { "type": "string" },
+          "priority": { "type": "integer", "minimum": 0, "maximum": 3 },
+          "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+          "code_location": {
+            "type": ["object", "null"],
+            "properties": {
+              "filepath": { "type": "string" },
+              "line_range": {
+                "type": "object",
+                "properties": {
+                  "start": { "type": "integer", "minimum": 1 },
+                  "end": { "type": "integer", "minimum": 1 }
+                },
+                "required": ["start", "end"],
+                "additionalProperties": false
+              }
+            },
+            "required": ["filepath", "line_range"],
+            "additionalProperties": false
+          }
+        },
+        "required": ["title", "body", "priority", "confidence_score", "code_location"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["verdict", "summary", "findings"],
+  "additionalProperties": false
+}
