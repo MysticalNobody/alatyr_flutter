@@ -170,6 +170,12 @@ void main() {
       final absolute = p.absolute(
         'app/integration_test/settings_theme_test.dart',
       );
+      // Compared as files, not as strings: e2e.sh spells the root the way
+      // $PWD spells it, this test the way getcwd() does, and under a
+      // symlinked checkout (macOS mktemp's /var/folders vs /private/var in
+      // tool/template_smoke.sh) those are different spellings of the same
+      // file.
+      final expected = File(absolute).resolveSymbolicLinksSync();
       for (final form in [
         'app/integration_test/settings_theme_test.dart', // as critical_flows.md spells it
         'integration_test/settings_theme_test.dart', // as patrol itself spells it
@@ -177,9 +183,27 @@ void main() {
       ]) {
         final r = await runE2e(['android', '-t', form]);
         expect(r.exitCode, 0, reason: '$form: ${r.stdout}${r.stderr}');
-        expect(r.stdout, contains('-t $absolute'), reason: form);
+        final invoked = RegExp(
+          r'PATROL_INVOKED .* -t (\S+)',
+        ).firstMatch(r.stdout as String);
+        expect(invoked, isNotNull, reason: '$form: ${r.stdout}${r.stderr}');
+        expect(
+          File(invoked!.group(1)!).resolveSymbolicLinksSync(),
+          expected,
+          reason: form,
+        );
       }
     },
+  );
+
+  test(
+    'a checkout path containing a space still resolves -t by file identity',
+    () {},
+    skip:
+        'deliberate: the fake-fvm PATROL_INVOKED echo and this file\'s '
+        r'-t (\S+) extraction both split on whitespace, and relocating the '
+        'checkout to a space path mid-test is not practical - a space-free '
+        'checkout path is the standing repository convention.',
   );
 
   test('an unknown -t path is a usage error, not a failed run', () async {

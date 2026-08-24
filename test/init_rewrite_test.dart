@@ -182,6 +182,39 @@ void main() {
     },
   );
 
+  test('a template-only doc block is removed whole, not rewritten into the '
+      'new identity', () {
+    final doc = read('docs/workflow/getting-started.md');
+    // Removed, not token-replaced: a surviving section would now call the
+    // NEW identity "the placeholder" and point at the deleted init tool.
+    expect(doc, isNot(contains('Instantiation')));
+    expect(doc, isNot(contains('my_app')));
+    expect(doc, isNot(contains('template-only')));
+    // The seam collapses to a single blank line, and the prose around the
+    // block survives untouched.
+    expect(doc, isNot(contains('\n\n\n')));
+    expect(doc, contains('## Prerequisites'));
+    expect(doc, contains('## First gate run'));
+    expect(report.rewritten, contains('docs/workflow/getting-started.md'));
+  });
+
+  test('several template-only blocks in one file are each removed', () {
+    final index = read('docs/README.md');
+    // Both blocks gone - the index entry for the deleted page and the
+    // maintainers' note (whose token must vanish with it, not be renamed).
+    expect(index, isNot(contains('instantiation')));
+    expect(index, isNot(contains('maintainers')));
+    expect(index, isNot(contains('my_app')));
+    expect(index, isNot(contains('template-only')));
+    expect(index, isNot(contains('\n\n\n')));
+    // The list closes ranks around the removed entry.
+    expect(
+      index,
+      contains('to green gate.\n- [workflow/e2e.md](workflow/e2e.md)'),
+    );
+    expect(report.rewritten, contains('docs/README.md'));
+  });
+
   /// A private copy of the fixture tree for a test that mutates it.
   String freshTree(String prefix) {
     final dir = Directory.systemTemp.createTempSync(prefix);
@@ -393,6 +426,71 @@ void main() {
       ),
     );
   });
+
+  test('an unbalanced template-only marker is a loud failure, not a silent '
+      'keep', () {
+    for (final (name, body) in [
+      ('unclosed', '# Doc\n<!-- template-only:begin -->\nnever closed\n'),
+      ('bare end', '# Doc\n<!-- template-only:end -->\ntail\n'),
+      (
+        'nested',
+        '# Doc\n<!-- template-only:begin -->\na\n'
+            '<!-- template-only:begin -->\nb\n<!-- template-only:end -->\n',
+      ),
+      ('inline', '# Doc\nx <!-- template-only:begin --> y\n'),
+      // A typo'd marker matches neither the whole-line strip nor the exact
+      // string: only a looser scan can keep it from silently shipping.
+      (
+        'misspelled',
+        '# Doc\n<!--template-only:begin-->\na\n<!--template-only:end-->\n',
+      ),
+    ]) {
+      final dir = freshTree('init_marker');
+      const rel = 'docs/architecture/broken.md';
+      File(p.join(dir, rel)).writeAsStringSync(body);
+      expect(
+        () => runInit(
+          rootDir: dir,
+          from: deriveIdentity(dir),
+          to: validateTarget(name: 'my_app', org: 'com.example'),
+          trackedFiles: [...fixtureTracked(), rel],
+        ),
+        throwsA(
+          isA<InitPostconditionException>().having(
+            (e) => e.message,
+            'message',
+            contains(rel),
+          ),
+        ),
+        reason: name,
+      );
+    }
+  });
+
+  test('a template-only block at the very start of a file strips cleanly', () {
+    final dir = freshTree('init_marker_start');
+    const rel = 'docs/architecture/startblock.md';
+    File(p.join(dir, rel)).writeAsStringSync(
+      '<!-- template-only:begin -->\nhidden\n<!-- template-only:end -->\nvisible\n',
+    );
+    runInit(
+      rootDir: dir,
+      from: deriveIdentity(dir),
+      to: validateTarget(name: 'my_app', org: 'com.example'),
+      trackedFiles: [...fixtureTracked(), rel],
+    );
+    expect(File(p.join(dir, rel)).readAsStringSync(), 'visible\n');
+  });
+
+  test(
+    'two blank lines after a stripped block collapse to one',
+    () {},
+    skip:
+        'deliberate: the documented contract collapses exactly ONE seam '
+        'blank line; markers are authored hugging their block (the fixture '
+        'and both live docs assert no double blank), so a sloppier seam is '
+        'an authoring bug the fixture test would catch, not a strip bug.',
+  );
 
   test('formatChangedDart reports a Dart file it cannot parse', () {
     final dir = freshTree('init_format_fail');

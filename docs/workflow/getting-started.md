@@ -23,15 +23,16 @@ trust steps both agents need.
 - **Node**, for the agent CLIs (`npm i -g @openai/codex`; Claude Code
   itself) and the web runtime smoke (`tool/web_smoke.sh`, Node >= 20).
 
+<!-- template-only:begin -->
 ## Instantiation
 
-Template-repo only: this checkout carries a placeholder identity
-(`alatyr_starter` / `dev.alatyr` / `Alatyr Starter`) — run `fvm install`,
-then `fvm dart run tool/init.dart`, before anything else, or skip this
-step once you have.
-See `docs/workflow/instantiation.md` for the command, the bundle-id
-grammar, and what it deletes (the page deletes itself with init — if
-it is missing, this step is already done).
+Template-repo only — init strips this whole section, along with the page
+it links, out of the instantiated copy. This checkout carries a
+placeholder identity (`alatyr_starter` / `dev.alatyr` / `Alatyr
+Starter`): run `fvm install`, then `fvm dart run tool/init.dart`, before
+anything else. See `docs/workflow/instantiation.md` for the command, the
+bundle-id grammar, the clean-worktree requirement, and what it deletes.
+<!-- template-only:end -->
 
 ## First gate run
 

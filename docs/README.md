@@ -52,9 +52,11 @@ One page per topic, newest facts first, always true of the current commit:
 - [workflow/getting-started.md](workflow/getting-started.md) —
   prerequisites, clone-to-green-gate walkthrough, running the app, and
   the one-time Claude Code / Codex trust steps.
+<!-- template-only:begin -->
 - `workflow/instantiation.md` — `tool/init.dart` in full: the rename
   plan, the bundle-id grammar, what it deletes. Template-repo only —
-  init deletes the page along with the tool it documents.
+  init deletes the page, the tool it documents, and this index entry.
+<!-- template-only:end -->
 - [workflow/e2e.md](workflow/e2e.md) — `tool/e2e.sh` in full: the device
   spec, the `patrol_cli` pin, exit codes, disk cleanup.
 - [workflow/feature-workflow.md](workflow/feature-workflow.md) — the

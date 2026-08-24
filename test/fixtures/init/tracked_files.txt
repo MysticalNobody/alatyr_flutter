@@ -26,8 +26,10 @@ app/windows/CMakeLists.txt
 app/windows/runner/Runner.rc
 app/windows/runner/main.cpp
 docs/adr/0006-working-placeholder-instantiation.md
+docs/README.md
 docs/architecture/01-overview.md
 docs/reference/package_graph.yaml
+docs/workflow/getting-started.md
 docs/workflow/instantiation.md
 pubspec.yaml
 test/fixtures/init/tracked_files.txt

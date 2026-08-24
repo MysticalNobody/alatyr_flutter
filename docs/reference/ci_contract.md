@@ -23,9 +23,11 @@ Each command is the single owner of its result:
   declared devices (`tool/e2e.yaml`; see `docs/workflow/e2e.md`).
 - `tool/web_smoke.sh` — drift persistence on the web proved in headless
   Chrome.
-- `tool/template_smoke.sh` — copies this checkout, instantiates the copy
-  with `tool/init.dart`, runs the full gate on the result. Template-repo
-  only; deleted by `init`.
+- `tool/template_smoke.sh` — builds a fixture from this checkout's
+  tracked files (exactly the "Use this template" payload — no gitignored
+  local junk), instantiates it with `tool/init.dart`, runs the full gate
+  on the result; the default temp fixture is removed on success and kept
+  for debugging on failure. Template-repo only; deleted by `init`.
 
 ## The contract any future CI must keep
 

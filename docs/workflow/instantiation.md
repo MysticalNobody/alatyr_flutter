@@ -44,17 +44,29 @@ instead of instantiating, for scripts that must not spell them
 `templateOnlyPaths` is an explicit maintenance list, not discovery. Every new
 tracked template-only artifact must be added there; the smoke reads that same
 list and only verifies its entries, so an omitted path survives init silently.
+Template-machinery prose inside a doc that itself survives is wrapped in
+whole-line `<!-- template-only:begin -->` / `<!-- template-only:end -->`
+markers (today: the Instantiation section of `getting-started.md` and this
+page's entry in `docs/README.md`): init removes the whole block, markers
+included, before token replacement — a block left to the token pass would
+come out calling the new identity "the placeholder". Markers must pair up
+and sit on their own lines; imbalance, an inline marker, or a typo'd
+variant (anything else containing `template-only:begin/end`) aborts the
+run. `docs/adr/` is never stripped (nor rewritten). This page may quote
+the markers only because init deletes it before the rewrite pass.
 The smoke's signing check is also intentionally concrete: it looks for
 `DEVELOPMENT_TEAM` in `app/ios/Runner.xcodeproj/project.pbxproj`. After a
 Flutter/Xcode layout change, update the check to the new canonical signing
 source or fail on the unknown layout — a move into an `.xcconfig` or workspace
 setting must not turn into a false pass.
 
-Needs a git checkout (`git ls-files` enumerates what to rewrite) — "Use
-this template" and `tool/template_smoke.sh` both give you one; a plain
-archive download does not, and the tool says so. If something looks wrong
-before you commit the result, recover with `git checkout -- . && git
-clean -fd`.
+Needs a **clean** git checkout (`git ls-files` enumerates what to
+rewrite) — "Use this template" and `tool/template_smoke.sh` both give you
+one; a plain archive download does not, and the tool says so. A dirty
+worktree is refused (exit 2) before anything is touched: the recovery
+command below discards uncommitted work, and refusing up front is what
+makes it safe to suggest at all. If something looks wrong before you
+commit the result, recover with `git checkout -- . && git clean -fd`.
 
 ## Next
 
