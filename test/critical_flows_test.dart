@@ -74,4 +74,23 @@ void main() {
       contains('missing'),
     );
   });
+
+  test('an integration test absent from the registry is a violation', () {
+    final v = validateCriticalFlows(rootDir: fx('unregistered'));
+    expect(v, hasLength(1));
+    expect(
+      v.single,
+      allOf(
+        contains('app/integration_test/orphan_test.dart'),
+        contains('not registered'),
+        contains('docs/reference/critical_flows.md'),
+      ),
+    );
+  });
+
+  test('a tree with no integration_test directory has nothing to register', () {
+    // The empty fixture has a header-only registry and no app/ at all: the
+    // reverse check must not invent a requirement for a dir that is absent.
+    expect(validateCriticalFlows(rootDir: fx('empty')), isEmpty);
+  });
 }
