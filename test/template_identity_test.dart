@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// Spec section 9: packages/, lints/ and tool/ are product-neutral by
+/// ADR-0006: packages/, lints/ and tool/ are product-neutral by
 /// construction, so init's identity rewrite never has to touch them - and
 /// neither are the agent harness files (AGENTS.md, CLAUDE.md, .claude/,
 /// .codex/), which init must leave untouched. This test is what makes

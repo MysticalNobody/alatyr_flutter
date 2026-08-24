@@ -24,8 +24,8 @@ final class InitReport {
   final skipped = <String>[];
 }
 
-/// Paths init removes (spec section 9 step 6): the init machinery, the
-/// template-only tests and docs, and the template's planning history.
+/// Paths init removes (see docs/workflow/instantiation.md): the init
+/// machinery plus its template-only tests and documentation.
 const templateOnlyPaths = [
   'tool/init.dart',
   'tool/src/init_identity.dart',
@@ -39,7 +39,6 @@ const templateOnlyPaths = [
   'test/fixtures/init',
   'test/template_identity_test.dart',
   'docs/workflow/instantiation.md',
-  'docs/superpowers',
 ];
 
 /// Files whose prose must keep the placeholder: ADRs record decisions.
@@ -262,7 +261,7 @@ void _pruneEmpty(Directory dir, {required String stopAt}) {
   }
 }
 
-/// The CLI's format step (spec section 9 step 7), separated so the fixture
+/// The CLI's documented format step, separated so the fixture
 /// tests can prove it is needed and sufficient.
 ProcessResult formatChangedDart({
   required String rootDir,

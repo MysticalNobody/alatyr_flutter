@@ -31,7 +31,7 @@ flows may point at different test functions inside the same file.
 "Restart" has two meanings in this repo, and the registered flow above uses
 the first one:
 
-- **In-process restart** (spec section 8's convention, what the registered
+- **In-process restart** (the repository convention, what the registered
   flow proves): the app entrypoint is re-invoked *within one test* — a
   fresh widget tree and a fresh DI graph. On device that is more than the
   widget-level twin in `app/test/app_test.dart`'s `"a fresh app over the

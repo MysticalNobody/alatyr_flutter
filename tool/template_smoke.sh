@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Template smoke (spec section 11): copy this checkout, make the copy a git
-# worktree (the gate's freshness snapshot needs one), instantiate it with
+# Template smoke (docs/reference/ci_contract.md): copy this checkout, make the
+# copy a git worktree (the gate's freshness snapshot needs one), instantiate it with
 # tool/init.dart and run the FULL gate on the result. Proves that what users
 # receive is a working project. Deleted by init.
 #   tool/template_smoke.sh [<fixture dir>]   (default: a temp dir)
@@ -10,7 +10,7 @@ source "$ROOT_DIR/tool/common.sh"
 FIXTURE="${1:-$(mktemp -d "${TMPDIR:-/tmp}/alatyr-smoke.XXXXXX")/fixture_app}"
 mkdir -p "$FIXTURE"
 echo "==> Copy -> $FIXTURE"
-rsync -a --exclude .git --exclude .dart_tool --exclude build --exclude '*.ru.md' --exclude CLAUDE.local.md "$ROOT_DIR"/ "$FIXTURE"/
+rsync -a --exclude .git --exclude .dart_tool --exclude build --exclude '*.ru.md' --exclude docs/superpowers --exclude CLAUDE.local.md "$ROOT_DIR"/ "$FIXTURE"/
 cd "$FIXTURE"
 git init -q
 git -c user.email=smoke@template -c user.name=smoke add -A

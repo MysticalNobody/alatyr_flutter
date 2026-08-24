@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
-/// The docs set of spec section 13, kept honest by machine: every file
+/// The canonical docs set, kept honest by machine: every file
 /// exists, every relative link resolves, and nothing shipped is in
 /// Russian (twins are gitignored).
 const requiredDocs = [
@@ -42,8 +42,8 @@ final _cyrillic = RegExp(r'[\u0400-\u04FF]');
 final _fencedBlock = RegExp(r'```[\s\S]*?```');
 final _inlineCode = RegExp(r'`[^`\n]*`');
 
-/// Shipped markdown: the top-level contracts plus docs/, minus the working
-/// documents under docs/superpowers/ (deleted by init) and Russian twins.
+/// Shipped markdown: the top-level contracts plus docs/, minus gitignored
+/// local work under docs/superpowers/ and Russian twins.
 Iterable<File> _markdownFiles() sync* {
   for (final top in ['README.md', 'AGENTS.md', 'CLAUDE.md']) {
     final f = File(top);

@@ -74,6 +74,9 @@ UI, and a stored value can itself be sensitive.
 rather than as a one-shot event, so a rebuild after the failure still shows
 it: the settings screen reads `lastFailure` from state and renders it
 through `SettingsKeys.failureBanner` (see [03](03-feature-contract.md)).
+There is deliberately no dismiss action: the banner remains until
+persistence emits a changed stored value, which creates a fresh
+`SettingsReady` without `lastFailure`.
 `AppLogger` carries the cases a user does not need to see: a corrupted
 stored theme mode falls back to `ThemeMode.system` and logs a warning
 instead of surfacing an `AppFailure`, and `App` logs a warning if the theme

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Patrol e2e runner (spec section 10): reads tool/e2e.yaml, finds or creates
+# Patrol e2e runner (docs/workflow/e2e.md): reads tool/e2e.yaml, finds or creates
 # the declared device, boots it, runs the registered flows with patrol under
 # a hard wall-clock guard, and shuts the device down in CI (keeps it alive
 # locally - a warm emulator is the developer's inner loop).

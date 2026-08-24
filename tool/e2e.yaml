@@ -1,4 +1,4 @@
-# Declarative e2e device profiles (spec section 10). No machine-specific
+# Declarative e2e device profiles (docs/workflow/e2e.md). No machine-specific
 # ids: tool/e2e.sh finds or creates these devices from the specs below, so
 # local and CI runs use the same API level and profile. The Android system
 # image is pinned per HOST architecture: an arm64 image cannot boot under

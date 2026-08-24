@@ -11,7 +11,8 @@ trust steps both agents need.
   iOS/macOS toolchains and native-asset builds.
 - **`brew install coreutils`** on macOS, for `gtimeout` — the gate's hard
   wall-clock guard prefers it (`timeout` on Linux, a `perl`-alarm fallback
-  otherwise; see `tool/common.sh`).
+  otherwise; the fallback does not terminate grandchildren as reliably as
+  `timeout -k`, see `tool/common.sh`).
 - **`libsecret-1-dev`** on Linux — `flutter_secure_storage`'s libsecret
   backend needs it (drift's own native `sqlite3` library is no longer an
   apt package: see First gate run below).
@@ -78,7 +79,10 @@ them `opfsLocks`; a missing asset surfaces in the browser console as
 `WebAssembly ... HTTP status code is not ok`. `tool/web_smoke.sh` proves
 persistence survives a reload; it builds into `app/build/web` and does not
 clean up after itself — delete `app/build` when done, same as after a
-patrol run.
+patrol run. `AppDatabase.open` does not currently attach drift's web
+`onResult` callback, so the chosen backend is not emitted through
+`AppLogger`; diagnose a silent fallback in the browser console and add
+structured logging before relying on telemetry for it.
 
 ## Patrol e2e
 

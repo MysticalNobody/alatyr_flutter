@@ -4,7 +4,8 @@ import 'src/init_identity.dart';
 import 'src/init_rewrite.dart';
 import 'src/init_validate.dart';
 
-/// One-shot template instantiation (spec section 9). Self-deleting: the
+/// One-shot template instantiation (docs/workflow/instantiation.md).
+/// Self-deleting: the
 /// rewrite removes this file, its sources, its tests and the rest of
 /// `templateOnlyPaths`. Run from the repository root of a git checkout.
 ///
@@ -138,7 +139,7 @@ void main(List<String> args) {
     stdout.writeln('Skipped (symlinks): ${report.skipped.join(', ')}');
   }
 
-  // Spec section 9 step 7: format what the rename touched, resolve, smoke.
+  // Documented final step: format what the rename touched, resolve, smoke.
   // `dart format` with an empty file list exits 64, so the whole step is
   // skipped when the rename touched no Dart file.
   if (report.changedDartFiles.isNotEmpty) {

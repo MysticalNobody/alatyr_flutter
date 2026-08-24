@@ -9,8 +9,9 @@ package.
 
 - `allowed_dependencies` lists **workspace-member edges only**. It says
   nothing about third-party packages.
-- Third-party (pub-hosted) dependencies are governed **solely** by
-  `banned_packages` below: anything not on that list is allowed.
+- Third-party (pub-hosted) dependencies are machine-governed **solely** by
+  `banned_packages` below: anything not on that list passes the graph
+  consumers, while invariant 9's ADR approval remains a separate process rule.
 - SDK dependencies (`flutter`, `flutter_test`) are forbidden — at both the
   pubspec and the import level — in every package listed under
   `pure_dart_packages`.
@@ -42,6 +43,18 @@ package.
    a one-shot `flutter analyze`, which does not load a plugin host
    (`dart-lang/sdk#63787`).
 
+The import lexer deliberately leaves malformed-Dart diagnostics to the
+analyzer: interpolation parsing is recursive without an explicit depth cap,
+and an unclosed parenthesized conditional directive is scanned to EOF. Real
+source depth and file length bound both cases. The analyzer plugin likewise
+fails open when it cannot load the graph so the editor stays usable; the two
+standalone validators fail loud and remain the enforcement of record.
+
+The root `analysis_options.yaml` owns one analysis context for the whole
+workspace. Members must not add nested analysis-options files: they create a
+new context where the root plugin disappears (and redeclaring it there is
+rejected by the analyzer).
+
 ## Banned means direct, not transitive
 
 `banned_packages` governs **direct declarations and imports only**.
@@ -50,12 +63,19 @@ example `provider` sits in `pubspec.lock` as a dependency of
 `flutter_bloc` and that is not a violation — nothing in this repo declares
 or imports `provider` directly.
 
+Machine allowance is not process approval. A package absent from the banned
+list still needs an accepted ADR when it is outside the canonical stack
+(AGENTS.md invariant 9). Usage patterns that a dependency scanner cannot
+express are review-owned convention bans: new tests do not use raw
+`flutter_test` finders, and `shared_preferences` must not be used as the
+application database; drift owns structured local persistence.
+
 ## The banned list (with reasons)
 
 | Package | Reason |
 |---|---|
-| `get_it` | manual constructor DI (spec section 5) |
-| `injectable` | manual constructor DI (spec section 5) |
+| `get_it` | manual constructor DI (ADR-0002) |
+| `injectable` | manual constructor DI (ADR-0002) |
 | `riverpod` | bloc is the canonical state management |
 | `flutter_riverpod` | bloc is the canonical state management |
 | `provider` | bloc is the canonical state management |

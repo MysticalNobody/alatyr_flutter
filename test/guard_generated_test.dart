@@ -4,7 +4,7 @@ import 'dart:io';
 import 'package:test/test.dart';
 
 /// Drives the hook script with the payload shapes both agents really send
-/// (captured in the M4 research pass) and checks the exit-code contract:
+/// (captured from both supported agent CLIs) and checks the exit-code contract:
 /// 2 = block, 0 = allow, unparsable = allow (the gate is the backstop).
 Future<ProcessResult> runGuard(String stdin) async {
   final process = await Process.start('bash', [

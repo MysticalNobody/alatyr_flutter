@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# ONE hook script for BOTH agents (spec section 6): blocks hand edits of
+# ONE hook script for BOTH agents (AGENTS.md hard invariant 5): blocks hand edits of
 # generated Dart files (*.g.dart, *.freezed.dart, *.drift.dart).
 # Deletes (`*** Delete File:`) and renames onto a generated name
 # (`*** Move to:`) are blocked on purpose too: codegen recreates the file,
 # and a hand delete would only resurface as a red codegen-freshness stage.
 #
-# Payloads (captured in the M4 research pass):
+# Supported payloads (captured from both agent CLIs):
 #   Claude Code PreToolUse, matcher Edit|Write:
 #     {"tool_name":"Write","tool_input":{"file_path":"/abs/x.g.dart",...}}
 #   Codex PreToolUse, matcher Edit|Write (alias of apply_patch):

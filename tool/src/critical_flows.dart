@@ -91,7 +91,7 @@ List<String> validateCriticalFlows({
     if (!path.endsWith('_test.dart')) {
       violations.add('$where: "$path" is not a *_test.dart file');
     }
-    // Spec section 10: critical flows are patrol tests under
+    // docs/reference/critical_flows.md: critical flows are patrol tests under
     // app/integration_test/ - a unit test cannot stand in for one.
     if (!path.startsWith('app/integration_test/')) {
       violations.add('$where: "$path" is not under app/integration_test/');

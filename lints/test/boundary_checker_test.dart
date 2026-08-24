@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 const _graph = '''
 package_kinds: [base, feature_api, feature_impl, app_root]
 banned_packages:
-  get_it: "manual constructor DI (spec section 5)"
+  get_it: "manual constructor DI (ADR-0002)"
   riverpod: "bloc is the canonical state management"
 pure_dart_packages: [app_core]
 packages:
