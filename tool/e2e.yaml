@@ -1,0 +1,19 @@
+# Declarative e2e device profiles (spec section 10). No machine-specific
+# ids: tool/e2e.sh finds or creates these devices from the specs below, so
+# local and CI runs use the same API level and profile. The Android system
+# image is pinned per HOST architecture: an arm64 image cannot boot under
+# KVM on x86_64 runners and vice versa.
+default_platform: android
+android:
+  avd_name: e2e_pixel
+  device_profile: pixel_7
+  api_level: 34
+  system_images:
+    arm64: system-images;android-34;google_apis;arm64-v8a
+    x86_64: system-images;android-34;google_apis;x86_64
+ios:
+  simulator_name: e2e_iphone
+  device_type: iPhone 16
+  # Matched by major version: the newest installed "iOS 26.x" runtime is
+  # used (an exact 26.0 runtime is rarely what a developer machine has).
+  runtime: "iOS 26.0"

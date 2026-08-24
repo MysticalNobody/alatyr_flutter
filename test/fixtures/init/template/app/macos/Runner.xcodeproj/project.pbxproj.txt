@@ -1,0 +1,30 @@
+		33CC10ED2044A3C60003C045 /* alatyr_starter.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "alatyr_starter.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+				33CC10ED2044A3C60003C045 /* alatyr_starter.app */,
+			productReference = 33CC10ED2044A3C60003C045 /* alatyr_starter.app */;
+		331C80DB294CF71000263BE5 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.alatyr.starter.RunnerTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/alatyr_starter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/alatyr_starter";
+			};
+			name = Debug;
+		};
+		331C80DC294CF71000263BE5 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.alatyr.starter.RunnerTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/alatyr_starter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/alatyr_starter";
+			};
+			name = Release;
+		};
+		331C80DD294CF71000263BE5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				PRODUCT_BUNDLE_IDENTIFIER = dev.alatyr.starter.RunnerTests;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/alatyr_starter.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/alatyr_starter";
+			};
+			name = Profile;
+		};

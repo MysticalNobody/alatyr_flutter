@@ -14,13 +14,14 @@ adversarial pass fits.
 | Screens | structural widget tests | `patrol_finders` (`$` syntax) |
 | Feature module | assembly test | `flutter_test` + patrol finders |
 | App shell | bootstrap smoke | `flutter_test` |
-| Critical flows | patrol e2e | `patrol` via `tool/e2e.sh` — lands in M5 |
+| Critical flows | patrol e2e | `patrol` via `tool/e2e.sh` |
 | Toolchain | fixture tests | `test` (root `test/`) |
 | Lint rules | unit + integration fixture | `test` + real `dart analyze` |
 
-Every layer above the e2e row exists today as a copyable exemplar (see
-below); e2e is the one row this milestone ships the *registry format* for
-(`docs/reference/critical_flows.md`) without the runner.
+Every layer, including e2e, exists today as a copyable exemplar: the
+runner (`tool/e2e.sh`), the declarative device spec (`tool/e2e.yaml`), and
+the registered flow (`docs/reference/critical_flows.md`, proved by
+`app/integration_test/settings_theme_test.dart`).
 
 ## No coverage floor
 
@@ -79,8 +80,8 @@ ritual.
 4. Codegen freshness (snapshot diff) — machine.
 5. Adversarial tests (fresh-context test-breaker) — machine + independent
    context.
-6. Patrol e2e over registered critical flows — machine, on-device (lands
-   in M5).
+6. Patrol e2e over registered critical flows — machine, on-device
+   (`tool/e2e.sh`).
 7. Codex cross-review of the diff — independent AI.
 8. Human behavioral check (UI changes) — the one human layer, by design.
 
@@ -95,6 +96,7 @@ The copyable pattern for each test type, by file:
 | Patrol widget test | `packages/feature_settings/test/settings_screen_test.dart`, `packages/design_system/test/app_choice_tile_test.dart` |
 | Module assembly test | `packages/feature_settings/test/settings_module_test.dart` |
 | App smoke, incl. bootstrap and in-process restart | `app/test/app_test.dart` |
+| Patrol e2e (registered in-process restart + fresh-process bonus) | `app/integration_test/settings_theme_test.dart` |
 | Toolchain fixtures | root `test/` |
 | Lint rules | `lints/test/` |
 

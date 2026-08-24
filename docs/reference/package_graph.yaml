@@ -3,7 +3,8 @@
 #   - allowed_dependencies lists WORKSPACE MEMBERS only.
 #   - Third-party deps are governed solely by banned_packages below.
 #   - SDK deps (flutter, flutter_test) are forbidden in pure_dart_packages.
-#   - Keys are package names; the app entry is renamed by tool/init.dart.
+#   - Keys are package names; the app entry is renamed by tool/init.dart,
+#     a template-only step that deletes itself once run.
 package_kinds: [base, feature_api, feature_impl, app_root]
 
 banned_packages:

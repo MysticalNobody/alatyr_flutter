@@ -5,9 +5,9 @@
 #                     (resolved graph) + toolchain analyze/test
 #                     + per-package dart-analyze/test + lint-plugin
 #                     analyze/test/integration fixture
+#                     + critical-flows registry
 #   --package <path>  fast tier + targeted analyze+test for one workspace
 #                     member
-# M5 appends the critical-flows check.
 set -euo pipefail
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 source "$ROOT_DIR/tool/common.sh"
@@ -155,5 +155,8 @@ echo "==> Lint plugin integration fixture"
 # integration script drives its own standalone `dart analyze` outside that
 # wrapper, so it gets an explicit wall-clock guard here.
 run_guarded "$CHECKS_ANALYZE_TIMEOUT" bash "$ROOT_DIR/lints/test/integration_check.sh"
+
+echo "==> Critical flows registry (docs/reference/critical_flows.md -> existing patrol tests)"
+run_dart run tool/verify_critical_flows.dart
 
 echo "OK"

@@ -26,6 +26,7 @@ const requiredDocs = [
   'docs/testing/strategy.md',
   'docs/testing/widget-test-guardrails.md',
   'docs/workflow/getting-started.md',
+  'docs/workflow/e2e.md',
   'docs/workflow/feature-workflow.md',
   'docs/workflow/maintenance.md',
   'docs/workflow/modules.md',
@@ -115,41 +116,13 @@ void main() {
     }
   });
 
-  test(
-    'critical_flows.md has the registry table shape the gate will parse',
-    () {
-      final lines = File('docs/reference/critical_flows.md').readAsLinesSync();
-      expect(lines, contains('| Flow | Test |'));
-      final rows = lines.where((l) => l.trimLeft().startsWith('|'));
-      for (final row in rows) {
-        final cells = row
-            .split('|')
-            .map((c) => c.trim())
-            .where((c) => c.isNotEmpty)
-            .toList();
-        if (cells.isEmpty || cells.first == 'Flow') {
-          continue; // header
-        }
-        if (cells.every((c) => RegExp(r'^:?-+:?$').hasMatch(c))) {
-          continue; // separator
-        }
-        expect(cells, hasLength(2), reason: row);
-        expect(
-          File(cells[1]).existsSync(),
-          isTrue,
-          reason: 'registry entry points to a missing test: ${cells[1]}',
-        );
-      }
-    },
-  );
-
   test('no shipped (tracked or untracked) file contains Cyrillic', () {
     Iterable<String> lsFiles(List<String> args) =>
         (Process.runSync('git', ['ls-files', ...args]).stdout as String)
             .split('\u0000')
             .where((s) => s.isNotEmpty);
     // Untracked-but-not-ignored files are scanned too: a brand-new file with
-    // Russian text must fail the local gate, not only CI after it lands.
+    // Russian text must fail the gate before it is ever committed.
     // Gitignored paths (the `*.ru.md` twins, CLAUDE.local.md) stay excluded.
     final candidates = [
       ...lsFiles(['-z']),

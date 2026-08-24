@@ -17,3 +17,9 @@ pubspec.lock
 
 # Local env files; only the *.example scheme is committed.
 .dart-defines/*.env
+
+# patrol_cli regenerates the test bundle on every run; SwiftPM resolution is
+# a build artefact of xcodebuild.
+**/test_bundle.dart
+.patrol.env
+**/xcshareddata/swiftpm/

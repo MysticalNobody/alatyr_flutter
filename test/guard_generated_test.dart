@@ -200,7 +200,41 @@ void main() {
         expect(await runFormat(gen.path), 0);
         expect(gen.readAsStringSync(), 'void main(){print( 1 );}\n');
         expect(await runFormat('${tmp.path}/missing.dart'), 0);
-        expect(await runFormat('${tmp.path}/notes.md'), 0);
+        final notes = File('${tmp.path}/notes.md')
+          ..writeAsStringSync('void main(){print( 1 );}\n');
+        expect(await runFormat(notes.path), 0);
+        expect(notes.readAsStringSync(), 'void main(){print( 1 );}\n');
+      },
+    );
+
+    test(
+      'a Codex apply_patch tool_response formats the added file and leaves '
+      'the generated one alone (absolute temp paths keep the case hermetic; '
+      'a real payload\'s relative paths resolve against the git root)',
+      () async {
+        final dirty = File('${tmp.path}/a.dart')
+          ..writeAsStringSync('void main(){print( 1 );}\n');
+        final generated = File('${tmp.path}/b.g.dart')
+          ..writeAsStringSync('void main(){print( 1 );}\n');
+        final payload = jsonEncode({
+          'tool_name': 'apply_patch',
+          'tool_input': {'command': '*** Begin Patch\n*** End Patch'},
+          'tool_response':
+              'Exit code: 0\nWall time: 0.1 seconds\nOutput:\nSuccess. '
+              'Updated the following files:\n'
+              'A ${dirty.path}\n'
+              'M ${generated.path}\n',
+        });
+        final process = await Process.start('bash', [
+          'tool/hooks/format_dart.sh',
+        ]);
+        process.stdin.write(payload);
+        await process.stdin.close();
+        await process.stdout.drain<void>();
+        await process.stderr.drain<void>();
+        expect(await process.exitCode, 0);
+        expect(dirty.readAsStringSync(), 'void main() {\n  print(1);\n}\n');
+        expect(generated.readAsStringSync(), 'void main(){print( 1 );}\n');
       },
     );
   });

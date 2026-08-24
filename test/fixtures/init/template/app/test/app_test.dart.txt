@@ -1,0 +1,10 @@
+import 'dart:async';
+
+import 'package:alatyr_starter/app.dart';
+import 'package:alatyr_starter/bootstrap/app_dependencies.dart';
+import 'package:alatyr_starter/bootstrap/bootstrap.dart';
+import 'package:app_config/app_config.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:patrol_finders/patrol_finders.dart';
+
+void main() {}

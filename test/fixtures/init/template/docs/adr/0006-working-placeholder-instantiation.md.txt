@@ -1,0 +1,11 @@
+# ADR-0006: Working-placeholder instantiation
+
+## Decision
+
+The template ships as a working, uniquely and greppably named placeholder
+project (`alatyr_starter` / `dev.alatyr` / `Alatyr Starter` /
+`alatyr_workspace`) and instantiates itself through a deterministic
+whole-token replacement across file contents and paths - its own
+`dart run tool/init.dart --name ... --org ...` - rather than through a
+template-rendering engine. Instantiation never rewrites this ADR: the
+record of what `alatyr_starter` was must survive the rename.

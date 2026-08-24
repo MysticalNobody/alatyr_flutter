@@ -1,5 +1,5 @@
 {
-  "description": "Alatyr: block hand edits of generated Dart files (hard invariant 5). Loads after project trust; review and trust it once with /hooks in the Codex TUI.",
+  "description": "Alatyr: block hand edits of generated Dart files (hard invariant 5) and keep the format stage green (PostToolUse). Each hook needs a one-time trust via /hooks in the Codex TUI.",
   "hooks": {
     "PreToolUse": [
       {
@@ -10,6 +10,19 @@
             "command": "\"$(git rev-parse --show-toplevel)/tool/hooks/guard_generated.sh\"",
             "timeout": 30,
             "statusMessage": "guard_generated"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/tool/hooks/format_dart.sh\"",
+            "timeout": 60,
+            "statusMessage": "format_dart"
           }
         ]
       }

@@ -33,19 +33,22 @@ theme-mode selection) that crosses every architectural layer end to end.
 
 1. Click **Use this template** on GitHub.
 2. Give the copy its own identity (replaces the `alatyr_starter` /
-   `dev.alatyr` / `Alatyr Starter` placeholder throughout the repo — lands
-   in M5):
+   `dev.alatyr` / `Alatyr Starter` placeholder throughout the repo):
    ```bash
    dart run tool/init.dart --name my_app --org com.example
    ```
-3. Resolve dependencies and run the gate:
+   One-shot and self-deleting: it prints the rename plan, asks to confirm
+   (skip with `--yes`), then rewrites the identity, deletes the init
+   machinery and `docs/superpowers/`, and runs `dart pub get` +
+   `tool/checks.sh --fast` for you.
+3. Commit the result, then run the full gate:
    ```bash
-   fvm flutter pub get
    tool/checks.sh
    ```
 
 See [`docs/workflow/getting-started.md`](docs/workflow/getting-started.md)
-for prerequisites, running the app, and the one-time agent trust steps.
+for prerequisites, running the app (including the patrol e2e runner and
+the web runtime smoke), and the one-time agent trust steps.
 
 ## What's inside
 
@@ -63,7 +66,7 @@ alatyr_flutter/
 │   ├── feature_settings_api/   # feature_api: contracts only
 │   └── feature_settings/       # feature_impl: bloc, screen, repository, module
 ├── lints/             # first-party analyzer plugin (not a workspace member)
-├── tool/              # tool/checks.sh — the one quality gate, locally and in CI
+├── tool/              # tool/checks.sh — the one quality gate (ADR-0004)
 ├── test/              # fixture tests for the toolchain itself
 ├── docs/              # architecture, ADRs, testing, workflow, reference
 └── .claude/ .codex/   # hooks, rules, skills, review config for both agents

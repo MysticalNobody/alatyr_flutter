@@ -11,6 +11,12 @@ CHECKS_ANALYZE_TIMEOUT="${CHECKS_ANALYZE_TIMEOUT:-180}"
 # per package on an M-series laptop) before it generates anything, and a
 # mis-resolved builder can spin forever - same wall-clock guard as tests.
 CHECKS_CODEGEN_TIMEOUT="${CHECKS_CODEGEN_TIMEOUT:-600}"
+# tool/e2e.sh: patrol has no wall-clock guard of its own, and a cold run is
+# a full native build plus an install plus the flows - 30 min covers it on a
+# hosted runner. Provisioning (system-image download, AVD/simulator create,
+# first boot) is bounded separately: it can be slow without being stuck.
+CHECKS_E2E_TIMEOUT="${CHECKS_E2E_TIMEOUT:-1800}"
+CHECKS_E2E_PROVISION_TIMEOUT="${CHECKS_E2E_PROVISION_TIMEOUT:-900}"
 
 is_ci() { [[ -n "${CI:-}" && "${CI}" != "false" && "${CI}" != "0" ]]; }
 

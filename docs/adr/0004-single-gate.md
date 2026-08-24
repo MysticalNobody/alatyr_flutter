@@ -17,10 +17,12 @@ identically on a developer's machine and in CI. Its tiers are `--fast`
 the default full tier (fast stages, then a cold codegen rebuild with a
 worktree snapshot compare, transitive purity, the workspace-wide analyze
 and test pass, the lint plugin's own analyze/test/integration fixture),
-and `--package <dir>` (a targeted analyze+test for one member). CI
-(`ci.yml`) runs exactly `tool/checks.sh` and owns no additional logic of
-its own. Every `analyze`/`test`/codegen invocation runs under a hard OS
-wall-clock timeout that names the offending package.
+and `--package <dir>` (a targeted analyze+test for one member). A CI
+runner, when one is wired, runs exactly `tool/checks.sh` and owns no
+additional logic of its own (none is wired today — see
+`docs/reference/ci_contract.md`). Every `analyze`/`test`/codegen
+invocation runs under a hard OS wall-clock timeout that names the
+offending package.
 
 ## Consequences
 
