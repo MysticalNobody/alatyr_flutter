@@ -101,6 +101,7 @@ void main(List<String> args) {
   } on InitArgumentException catch (e) {
     _usage(e.message);
   }
+  _requireCleanWorktree(root);
   final tracked = _trackedFiles(root);
 
   stdout
@@ -120,6 +121,10 @@ void main(List<String> args) {
       stderr.writeln('aborted');
       exit(1);
     }
+    // The tree may have changed while the prompt waited for an answer:
+    // re-verify right before the destructive step, or the clean-tree
+    // guarantee above is only as old as the user's think time.
+    _requireCleanWorktree(root);
   }
 
   final report = _guarded(
@@ -182,7 +187,8 @@ Never _usage(String message) {
       'usage: dart run tool/init.dart --name NAME --org ORG [--display-name TITLE] [--template-url URL] [--yes] | --print-identity | --print-template-only-paths',
     )
     ..writeln(
-      'Run it from the repository root of a git checkout: only tracked files are rewritten.',
+      'Run it from the repository root of a clean git checkout: only tracked '
+      'files are rewritten, and a dirty worktree is refused.',
     );
   exit(2);
 }
@@ -248,6 +254,48 @@ String _resolve(String path) {
   } on FileSystemException {
     return path;
   }
+}
+
+/// init rewrites tracked files in place, and its documented recovery command
+/// (`git checkout -- . && git clean -fd`) discards uncommitted work — so a
+/// dirty tree is refused while nothing has been touched yet, which is what
+/// makes that recovery command safe to print at all.
+void _requireCleanWorktree(String root) {
+  // --untracked-files=all: a status.showUntrackedFiles=no config would
+  // otherwise hide untracked files from the guard entirely, and clean -fd
+  // deletes exactly those.
+  final result = Process.runSync('git', [
+    'status',
+    '--porcelain',
+    '--untracked-files=all',
+  ], workingDirectory: root);
+  if (result.exitCode != 0) {
+    stderr.writeln(
+      'init must run inside a git checkout (git status failed): ${result.stderr}',
+    );
+    exit(2);
+  }
+  final entries = (result.stdout as String)
+      .split('\n')
+      .where((l) => l.isNotEmpty)
+      .toList();
+  if (entries.isEmpty) {
+    return;
+  }
+  const shown = 10;
+  stderr.writeln('the worktree has uncommitted changes:');
+  for (final entry in entries.take(shown)) {
+    stderr.writeln('  $entry');
+  }
+  if (entries.length > shown) {
+    stderr.writeln('  ... and ${entries.length - shown} more');
+  }
+  stderr.writeln(
+    'commit or stash first: init rewrites tracked files in place, and its '
+    'recovery command (git checkout -- . && git clean -fd) would discard '
+    'these changes',
+  );
+  exit(2);
 }
 
 List<String> _trackedFiles(String root) {

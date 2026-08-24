@@ -1,0 +1,20 @@
+# Getting started
+
+From a fresh clone to a green gate and a running app.
+
+## Prerequisites
+
+- **fvm**, with Flutter pinned by `.fvmrc` — always invoke `fvm flutter`.
+
+<!-- template-only:begin -->
+## Instantiation
+
+Template-repo only: this checkout carries a placeholder identity
+(`alatyr_starter` / `dev.alatyr` / `Alatyr Starter`) — run `fvm install`,
+then `fvm dart run tool/init.dart`, before anything else.
+See `docs/workflow/instantiation.md` for the command and what it deletes.
+<!-- template-only:end -->
+
+## First gate run
+
+Clone, `fvm install`, then `tool/checks.sh`.

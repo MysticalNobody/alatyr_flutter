@@ -92,7 +92,10 @@ InitReport runInit({
     if (bytes.take(1024).contains(0)) continue; // binary
     final before = utf8.decode(bytes, allowMalformed: true);
     final newId = _isApple(rel) ? to.bundleIdCamel : to.bundleIdSnake;
-    var after = before;
+    // Marked blocks go first: prose about the template machinery is removed
+    // whole, so the token pass below never rewrites it into a paragraph
+    // that calls the NEW identity "the placeholder".
+    var after = _stripTemplateOnlyBlocks(before, rel);
     after = _replaceToken(after, from.bundleId, newId, noDotBefore: true);
     after = _replaceToken(
       after,
@@ -187,6 +190,78 @@ InitReport runInit({
     );
   }
   return report;
+}
+
+/// Whole-line markers around prose that documents the template machinery
+/// (the Instantiation walkthrough, the docs index entry for the page init
+/// deletes). The block, markers included, is removed from every rewritten
+/// file — deletion, not token replacement, is what such prose needs.
+const _templateOnlyBegin = '<!-- template-only:begin -->';
+const _templateOnlyEnd = '<!-- template-only:end -->';
+
+/// Anything that even resembles a marker. A typo'd variant (say, the
+/// comment syntax without spaces) matches neither the whole-line strip nor
+/// an exact-string check — it would be neither stripped nor flagged, the
+/// one silent failure mode this mechanism cannot afford.
+final _templateOnlyMarkerish = RegExp('template-only:(begin|end)');
+
+/// Removes `<!-- template-only:begin/end -->` blocks. Markers must be whole
+/// lines and properly paired: a half-marked block would ship half-stripped
+/// docs, so imbalance — or anything marker-like that survives the strip —
+/// is an [InitPostconditionException], never a silent keep. When the
+/// removal would leave two adjacent blank lines, one is dropped with it.
+String _stripTemplateOnlyBlocks(String text, String rel) {
+  if (!_templateOnlyMarkerish.hasMatch(text)) {
+    return text;
+  }
+  final kept = <String>[];
+  var inBlock = false;
+  var justClosed = false;
+  for (final line in text.split('\n')) {
+    final trimmed = line.trim();
+    if (trimmed == _templateOnlyBegin) {
+      if (inBlock) {
+        throw InitPostconditionException('nested $_templateOnlyBegin in $rel');
+      }
+      inBlock = true;
+      justClosed = false;
+      continue;
+    }
+    if (trimmed == _templateOnlyEnd) {
+      if (!inBlock) {
+        throw InitPostconditionException(
+          '$_templateOnlyEnd without $_templateOnlyBegin in $rel',
+        );
+      }
+      inBlock = false;
+      justClosed = true;
+      continue;
+    }
+    if (inBlock) {
+      continue;
+    }
+    if (justClosed &&
+        trimmed.isEmpty &&
+        kept.isNotEmpty &&
+        kept.last.trim().isEmpty) {
+      justClosed = false;
+      continue;
+    }
+    justClosed = false;
+    kept.add(line);
+  }
+  if (inBlock) {
+    throw InitPostconditionException('unclosed $_templateOnlyBegin in $rel');
+  }
+  final result = kept.join('\n');
+  if (_templateOnlyMarkerish.hasMatch(result)) {
+    throw InitPostconditionException(
+      'inline or malformed template-only marker in $rel (markers must be '
+      'exactly "$_templateOnlyBegin" / "$_templateOnlyEnd", each on its own '
+      'line)',
+    );
+  }
+  return result;
 }
 
 String _replaceToken(
