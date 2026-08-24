@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
 /// Fake adb: reports exactly one running emulator and answers the console
@@ -149,5 +150,46 @@ void main() {
     expect(r.exitCode, 3, reason: '${r.stdout}${r.stderr}');
     expect(r.stderr, contains('e2e not performed'));
     expect(r.stderr, contains('Flutter SDK'));
+  });
+
+  test(
+    '-t is resolved against the repository root, in every accepted form',
+    () async {
+      final absolute = p.absolute(
+        'app/integration_test/settings_theme_test.dart',
+      );
+      for (final form in [
+        'app/integration_test/settings_theme_test.dart', // as critical_flows.md spells it
+        'integration_test/settings_theme_test.dart', // as patrol itself spells it
+        absolute,
+      ]) {
+        final r = await runE2e(['android', '-t', form]);
+        expect(r.exitCode, 0, reason: '$form: ${r.stdout}${r.stderr}');
+        expect(r.stdout, contains('-t $absolute'), reason: form);
+      }
+    },
+  );
+
+  test('an unknown -t path is a usage error, not a failed run', () async {
+    final r = await runE2e([
+      'android',
+      '-t',
+      'integration_test/nope_test.dart',
+    ]);
+    expect(r.exitCode, 2, reason: '${r.stdout}${r.stderr}');
+    expect(r.stderr, contains('no such test file'));
+  });
+
+  test('--list needs no patrol_cli: it is a pure config echo', () async {
+    patrolVersion = '0.0.0-not-the-pin';
+    addTearDown(() {
+      patrolVersion = RegExp(
+        r'^PATROL_CLI_VERSION="([0-9.]+)"',
+        multiLine: true,
+      ).firstMatch(File('tool/e2e.sh').readAsStringSync())!.group(1)!;
+    });
+    final r = await runE2e(['--list']);
+    expect(r.exitCode, 0, reason: '${r.stdout}${r.stderr}');
+    expect(r.stdout, contains('android: avd='));
   });
 }

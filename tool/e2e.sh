@@ -31,10 +31,34 @@ while [[ $# -gt 0 ]]; do
 done
 not_performed() { echo "e2e not performed: $*" >&2; exit 3; }
 
+# `-t` is spelled the way docs/reference/critical_flows.md spells it: relative
+# to the REPOSITORY ROOT (app/integration_test/...). patrol runs inside app/,
+# so resolve the path here, while the root is still the frame of reference -
+# an absolute path and an app-relative one are accepted too.
+if [[ -n "$TEST_FILE" ]]; then
+  if [[ "$TEST_FILE" != /* ]]; then
+    if   [[ -f "$ROOT_DIR/$TEST_FILE"     ]]; then TEST_FILE="$ROOT_DIR/$TEST_FILE"
+    elif [[ -f "$ROOT_DIR/app/$TEST_FILE" ]]; then TEST_FILE="$ROOT_DIR/app/$TEST_FILE"
+    fi
+  fi
+  if [[ ! -f "$TEST_FILE" ]]; then
+    echo "no such test file: $TEST_FILE (paths are relative to the repository root, e.g. app/integration_test/x_test.dart)" >&2
+    exit 2
+  fi
+fi
+
 # --- config (typed loader; prints KEY='value' lines)
 config="$(run_dart run tool/e2e_config.dart)" || not_performed "tool/e2e.yaml is invalid (see above)"
 eval "$config"
 [[ -n "$PLATFORM" ]] || PLATFORM="$DEFAULT_PLATFORM"
+
+# --list is a pure config echo: it must work on a machine with no patrol_cli
+# and no Flutter SDK resolved, so it comes before every tooling gate.
+if [[ "$LIST" == "true" ]]; then
+  echo "android: avd=$ANDROID_AVD_NAME profile=$ANDROID_DEVICE_PROFILE api=$ANDROID_API_LEVEL images: arm64=$ANDROID_SYSTEM_IMAGE_ARM64 x86_64=$ANDROID_SYSTEM_IMAGE_X86_64"
+  echo "ios: simulator=$IOS_SIMULATOR_NAME type='$IOS_DEVICE_TYPE' runtime='$IOS_RUNTIME'"
+  exit 0
+fi
 
 # --- patrol_cli, fvm-first like common.sh
 patrol() {
@@ -49,12 +73,6 @@ if command -v fvm >/dev/null 2>&1; then
   PATROL_FLUTTER_COMMAND="$(fvm exec which flutter)" \
     || not_performed "fvm could not resolve the pinned Flutter SDK (fvm install)"
 else PATROL_FLUTTER_COMMAND="flutter"; fi
-
-if [[ "$LIST" == "true" ]]; then
-  echo "android: avd=$ANDROID_AVD_NAME profile=$ANDROID_DEVICE_PROFILE api=$ANDROID_API_LEVEL images: arm64=$ANDROID_SYSTEM_IMAGE_ARM64 x86_64=$ANDROID_SYSTEM_IMAGE_X86_64"
-  echo "ios: simulator=$IOS_SIMULATOR_NAME type='$IOS_DEVICE_TYPE' runtime='$IOS_RUNTIME'"
-  exit 0
-fi
 
 PROVISION_TIMEOUT="$CHECKS_E2E_PROVISION_TIMEOUT"   # image install / boot, bounded like everything else
 booted_device=""   # set BEFORE any wait so cleanup can always reach it
@@ -98,8 +116,13 @@ case "$PLATFORM" in
       [[ -n "$DEVICE" || -z "$others" ]] || not_performed "running emulator(s)$others are not the declared '$ANDROID_AVD_NAME' (shut them down, or pass --device <serial> to use one explicitly)"
     fi
     if [[ -z "$DEVICE" ]]; then
-      if ! "$TOOLS/avdmanager" list avd -c 2>/dev/null | grep -qx "$ANDROID_AVD_NAME"; then
-        "$TOOLS/sdkmanager" --list_installed 2>/dev/null | grep -q "$IMAGE" \
+      # Captured, then matched with grep -F: a `grep -q` closing the pipe early
+      # can kill the producer with SIGPIPE, and under `pipefail` that reads as
+      # "not installed". -F/-x: these are names, not regexes.
+      avds="$("$TOOLS/avdmanager" list avd -c 2>/dev/null || true)"
+      if ! grep -qxF -- "$ANDROID_AVD_NAME" <<<"$avds"; then
+        images="$("$TOOLS/sdkmanager" --list_installed 2>/dev/null || true)"
+        grep -qF -- "$IMAGE" <<<"$images" \
           || { echo "    installing $IMAGE"; yes | "$TOOLS/sdkmanager" --licenses >/dev/null 2>&1 || true; run_guarded "$PROVISION_TIMEOUT" "$TOOLS/sdkmanager" "$IMAGE" >/dev/null || not_performed "could not install $IMAGE"; }
         echo "    creating AVD $ANDROID_AVD_NAME ($ANDROID_DEVICE_PROFILE, $IMAGE)"
         echo no | "$TOOLS/avdmanager" create avd -n "$ANDROID_AVD_NAME" -k "$IMAGE" -d "$ANDROID_DEVICE_PROFILE" >/dev/null \
