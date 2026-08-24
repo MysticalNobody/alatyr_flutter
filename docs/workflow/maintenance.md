@@ -14,8 +14,9 @@ Bump the version in `.fvmrc`, then:
    `lints/pubspec.yaml`'s exact constraint and re-run the lint-plugin
    stage of the gate.
 2. Run the full gate: `tool/checks.sh`.
-3. Run a template smoke: `tool/template_smoke.sh` instantiates a fixture
-   copy and runs the gate on it too — a Flutter bump can shift generated
+3. Template repo only (init deletes the script — instantiated copies
+   skip this step): `tool/template_smoke.sh` instantiates a fixture copy
+   and runs the gate on it too — a Flutter bump can shift generated
    output in ways only a real `init` run surfaces.
 4. Re-run `tool/e2e.sh` on both platforms it can reach locally — a
    Flutter bump can shift patrol/emulator behavior independently of the
@@ -64,11 +65,25 @@ patrol's finder API and its e2e runner version in lockstep.
   `.claude/skills/cross-review/codex_review.sh`. When Codex rejects the
   pinned model (deprecated, renamed), update it in that one file — both
   the CLI review and Codex cloud PR review pick it up.
+- **Model access:** the pinned model is served per account tier; if
+  `codex` rejects it on your plan, the DoD-4 waiver path applies until
+  the pin is updated here.
 - **CLI version:** `0.144.x` — the hook schema, `--output-schema`, and the
   `-c key=value` override flags this template relies on were verified
   against that line. Re-verify `.codex/hooks.json`'s schema and the
   `codex_review.sh` flags after any major/minor CLI bump before trusting
   its output again.
+
+## Release builds
+
+Verified 2026-08-24 (Flutter 3.44.9, `fvm flutter build apk --release`):
+`patrol`/`patrol_finders` are fully absent from the release APK — zero
+references in `classes.dex`, no patrol native library. `libdartjni.so`
+in the APK belongs to `path_provider_android` (a production transitive),
+not patrol. Re-verify after a patrol or Flutter bump. The desktop shells
+(`linux/`, `windows/`, `macos/`) ship identity-rewritten but unverified:
+no gate stage builds them, so the first desktop build is the consumer's
+own proof step.
 
 ## Claude Code
 
@@ -116,9 +131,11 @@ committing.
 2. `fvm flutter pub get`.
 3. `tool/checks.sh` (full gate).
 4. `tool/template_smoke.sh` if the bump could shift generated output
-   (Flutter, `init.dart` itself); `tool/e2e.sh` on whatever platforms are
-   reachable locally if the bump touches patrol, `patrol_cli`, or the
-   Android/iOS toolchain.
+   (Flutter, `init.dart` itself; template repo only — init deletes it);
+   `tool/e2e.sh` on whatever platforms are reachable locally if the bump
+   touches patrol, `patrol_cli`, or the Android/iOS toolchain;
+   `tool/web_smoke.sh` if it touches drift, `sqlite3`, or `app/web/`
+   assets.
 5. Fix whatever the gate, the smoke, or e2e surfaces.
 6. Record what changed and why in this file, next to the relevant
    section, so the next upgrade starts from the same evidence instead of

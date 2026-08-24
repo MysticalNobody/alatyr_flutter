@@ -25,8 +25,9 @@ trust steps both agents need.
 ## Instantiation
 
 Template-repo only: this checkout carries a placeholder identity
-(`alatyr_starter` / `dev.alatyr` / `Alatyr Starter`) — run
-`tool/init.dart` before anything else, or skip this step once you have.
+(`alatyr_starter` / `dev.alatyr` / `Alatyr Starter`) — run `fvm install`,
+then `fvm dart run tool/init.dart`, before anything else, or skip this
+step once you have.
 See `docs/workflow/instantiation.md` for the command, the bundle-id
 grammar, and what it deletes (the page deletes itself with init — if
 it is missing, this step is already done).
@@ -35,7 +36,7 @@ it is missing, this step is already done).
 
 ```bash
 git clone <your fork>
-cd alatyr_flutter
+cd <your repo>
 fvm install
 fvm flutter pub get
 tool/checks.sh --fast   # format + dependency graph + imports, ~seconds

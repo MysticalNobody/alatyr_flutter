@@ -102,5 +102,28 @@ List<String> validateCriticalFlows({
       );
     }
   }
+  // The reverse direction: an integration test the registry does not name
+  // is a critical flow invisible to the test plan - the registry would
+  // read as complete while a whole flow ships unregistered.
+  final integrationDir = Directory(p.join(rootDir, 'app', 'integration_test'));
+  if (integrationDir.existsSync()) {
+    final registered = {for (final f in flows) f.testPath};
+    final tests =
+        integrationDir
+            .listSync(recursive: true, followLinks: false)
+            .whereType<File>()
+            .map((f) => p.relative(f.path, from: rootDir))
+            .where((rel) => rel.endsWith('_test.dart'))
+            .toList()
+          ..sort();
+    for (final rel in tests) {
+      if (!registered.contains(rel)) {
+        violations.add(
+          '$rel: not registered in $registryPath - every '
+          'app/integration_test/*_test.dart must be named by a registry row',
+        );
+      }
+    }
+  }
   return violations;
 }

@@ -20,10 +20,6 @@ upgrade pass.
   viability, spec §15 risk 5), iOS e2e on a macOS runner (cost call),
   `tool/web_smoke.sh` as a job (headless-Chrome cost/flakiness call),
   and Codex `/hooks` trust on untrusted runners.
-- **`patrol` dev dependency vs release builds** — `patrol`/
-  `patrol_finders` are `dev_dependencies` in `app/pubspec.yaml`; verify a
-  real `flutter build` (release, every platform) actually excludes them
-  from the shipped binary rather than trusting the pubspec section alone.
 - **`android.builtInKotlin=true` with patrol 4.9** — `app/android/gradle.properties`
   keeps it `false` (the Flutter-template default); patrol's Gradle
   integration with the newer built-in-Kotlin path is unverified and worth
@@ -48,8 +44,8 @@ upgrade pass.
   (Xcode 26.2) the per-test progress lines and the CLI's own summary go
   blank (`Total: 0`) while the run's `.xcresult` records every test and
   the exit code stays truthful (verified 2026-08-24: 2 passed there);
-  the summary parser, not the run, is broken. Trust the exit code plus
-  the `.xcresult`; re-check on the next patrol/patrol_cli bump.
+  the summary parser, not the run, is broken. Documented operator-side
+  in `docs/workflow/e2e.md`; re-check on the next patrol/patrol_cli bump.
 
 ## Recorded as accepted (no action planned)
 

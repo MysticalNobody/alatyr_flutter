@@ -279,7 +279,13 @@ void _run(String root, List<String> args, String label, {bool shell = false}) {
   stdout.write(result.stdout);
   stderr.write(result.stderr);
   if (result.exitCode != 0) {
-    stderr.writeln('$label failed (exit ${result.exitCode})');
+    stderr
+      ..writeln('$label failed (exit ${result.exitCode})')
+      // These steps run after the rewrite: the tree is already renamed.
+      ..writeln(
+        'the rename itself is done; fix the issue and re-run "$label", or '
+        'start over with: git checkout -- . && git clean -fd',
+      );
     exit(result.exitCode);
   }
 }

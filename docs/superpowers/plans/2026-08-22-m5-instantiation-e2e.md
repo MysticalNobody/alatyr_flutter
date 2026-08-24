@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-13-alatyr-flutter-starter-design.md` §8 (restart convention), §9, §10 (e2e), §11 (CI), §15, §16-M5. **Carryover:** `docs/superpowers/plans/m4-carryover.md` (M5 section — this plan closes it; the two "nits" at its end too).
 
-**Verified reference (may be gone in a later session; the plan is self-sufficient):** `/private/tmp/claude-501/-Users-nikitakhilobok-Documents-projects-my-alatyr-flutter/274f6fc9-972b-474e-8cfd-9d8077742bfc/scratchpad/m5-research.md`, scratch copies `.../scratchpad/m5-patrol/repo` (patrol scaffolding applied, both runs green) and `.../scratchpad/m5-init/repo` (renamed copy, gate green).
+**Verified reference (may be gone in a later session; the plan is self-sufficient):** `/private/tmp/claude-501/-Users-dev-Documents-projects-my-alatyr-flutter/274f6fc9-972b-474e-8cfd-9d8077742bfc/scratchpad/m5-research.md`, scratch copies `.../scratchpad/m5-patrol/repo` (patrol scaffolding applied, both runs green) and `.../scratchpad/m5-init/repo` (renamed copy, gate green).
 
 ## Global Constraints
 
