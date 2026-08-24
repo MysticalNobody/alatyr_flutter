@@ -22,6 +22,11 @@ tool/e2e.sh android                         # or ios; --device <id>, --list, -t 
   stderr — report it verbatim, never fabricate a result); `124`
   (`gtimeout`/`timeout`) or `142` (the bare-macOS `perl`-alarm fallback,
   SIGALRM) when the hard wall-clock guard kills a hung run.
+- **Xcode 26 summary quirk:** `patrol_cli` 4.7.0 cannot parse the new
+  Xcode's console stream: on iOS 26.x its summary prints `Total: 0` even
+  though every test ran — the run's `.xcresult` records them and the exit
+  code stays truthful. Trust the exit code and the `.xcresult`; re-check
+  on the next patrol/patrol_cli bump.
 - **Disk:** a local `patrol test`, like `flutter build`, leaves
   0.5–2 GB under `app/build` — delete it after each proof step.
 

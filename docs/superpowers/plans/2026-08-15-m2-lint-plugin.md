@@ -18,7 +18,7 @@
 - `lints/` is NOT in the root `workspace:` list; root analysis excludes `lints/**`; `lints/pubspec.lock` untracked (the analysis server's synthetic package runs its own `pub upgrade` — the pin must live in the version constraint, not a lockfile).
 - Plugin degrades gracefully: missing/broken graph → rules silently disabled for that tree (never crash the analyzer host). The strict loader in `tool/` remains the loud one.
 - The gate's scanner stages stay authoritative; every plugin stage runs under `run_guarded` wall-clock timeouts (plugin hosts have a hang history: asp ≤0.3.19 + sdk#63538; 0.3.20 fixed it — the guard is insurance). Known upstream caveat sdk#63787: one-shot `flutter analyze` may miss plugin diagnostics — irrelevant to gate correctness because scanners are the floor; record in comments.
-- Verified API reference (working skeleton + passing tests from the research pass, consult for exact imports/signatures): `/private/tmp/claude-501/-Users-nikitakhilobok-Documents-projects-my-alatyr-flutter/88c91244-82be-424a-aa0a-981223de147d/scratchpad/e2e/my_lints/`.
+- Verified API reference (working skeleton + passing tests from the research pass, consult for exact imports/signatures): `/private/tmp/claude-501/-Users-dev-Documents-projects-my-alatyr-flutter/88c91244-82be-424a-aa0a-981223de147d/scratchpad/e2e/my_lints/`.
 - TDD; conventional commits + trailer `Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>`; `fvm dart format` clean before every commit; never push.
 - Work on branch `feat/m2-lint-plugin` (from main).
 

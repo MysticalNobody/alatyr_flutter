@@ -44,6 +44,8 @@
       "Bash(tool/checks.sh:*)",
       "Bash(tool/codegen.sh:*)",
       "Bash(tool/e2e.sh:*)",
+      "Bash(tool/template_smoke.sh:*)",
+      "Bash(tool/web_smoke.sh:*)",
       "Bash(bash tool/checks.sh:*)",
       "Bash(bash tool/codegen.sh:*)"
     ],

@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-13-alatyr-flutter-starter-design.md` §3, §5, §6, §8, §9 (identity), §10, §16-M3. **Carryover:** `docs/superpowers/plans/m2-carryover.md` (M3 section — this plan closes it).
 
-**Verified reference (consult for exact, already-passing code; everything in it ran on the pinned toolchain):** `/private/tmp/claude-501/-Users-nikitakhilobok-Documents-projects-my-alatyr-flutter/274f6fc9-972b-474e-8cfd-9d8077742bfc/scratchpad/m3-research.md` (facts + snippets) and `.../scratchpad/m3sim/` (a full M3-shaped copy of the repo on which `tool/checks.sh` passed end-to-end in 1m26s). If the scratchpad is gone, this plan is self-sufficient — every snippet it needs is inlined below. The snippets were compiled and their tests run during the plan challenge, but they are not all `dart format`-clean as inlined: run `fvm dart format .` after pasting (the `--fast` gate starts with the format check).
+**Verified reference (consult for exact, already-passing code; everything in it ran on the pinned toolchain):** `/private/tmp/claude-501/-Users-dev-Documents-projects-my-alatyr-flutter/274f6fc9-972b-474e-8cfd-9d8077742bfc/scratchpad/m3-research.md` (facts + snippets) and `.../scratchpad/m3sim/` (a full M3-shaped copy of the repo on which `tool/checks.sh` passed end-to-end in 1m26s). If the scratchpad is gone, this plan is self-sufficient — every snippet it needs is inlined below. The snippets were compiled and their tests run during the plan challenge, but they are not all `dart format`-clean as inlined: run `fvm dart format .` after pasting (the `--fast` gate starts with the format check).
 
 ## Global Constraints
 

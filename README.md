@@ -32,10 +32,12 @@ theme-mode selection) that crosses every architectural layer end to end.
 ## Quick start
 
 1. Click **Use this template** on GitHub.
-2. Give the copy its own identity (replaces the `alatyr_starter` /
-   `dev.alatyr` / `Alatyr Starter` placeholder throughout the repo):
+2. Install the pinned toolchain, then give the copy its own identity
+   (replaces the `alatyr_starter` / `dev.alatyr` / `Alatyr Starter`
+   placeholder throughout the repo):
    ```bash
-   dart run tool/init.dart --name my_app --org com.example
+   fvm install
+   fvm dart run tool/init.dart --name my_app --org com.example
    ```
    One-shot and self-deleting: it prints the rename plan, asks to confirm
    (skip with `--yes`), then rewrites the identity, deletes the init

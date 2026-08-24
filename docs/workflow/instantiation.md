@@ -6,7 +6,8 @@ rewrites into yours. Skip this doc once you have run it — the command
 deletes itself as its last step.
 
 ```bash
-dart run tool/init.dart --name my_app --org com.example \
+fvm install   # once; init's own pub get and gate run need the pinned SDK
+fvm dart run tool/init.dart --name my_app --org com.example \
   [--display-name "My App"] [--template-url <url>] [--yes]
 ```
 
@@ -25,8 +26,8 @@ before anything is touched (exit 2): the same org, an org extending it
 (`dev.alatyr.apps`), the template's package or display name. The rewrite
 replaces whole tokens and then scans for leftovers, so such a target
 would either double an identifier or report a survivor that is really
-the identity you asked for. `--template-url` links the generated
-`README.md` back to Alatyr;
+the identity you asked for. `--template-url` overrides the backlink in the generated `README.md`
+(default: the canonical template repository URL);
 `--print-identity` prints the placeholder tokens as `KEY='value'` lines
 instead of instantiating, for scripts that must not spell them
 (`tool/template_smoke.sh`).

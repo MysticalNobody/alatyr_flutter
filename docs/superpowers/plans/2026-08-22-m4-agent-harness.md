@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-08-13-alatyr-flutter-starter-design.md` §4, §6 (agent-level hooks), §7, §10 (adversarial), §12, §13, §15, §16-M4. **Carryover:** `docs/superpowers/plans/m3-carryover.md` (M4 section — this plan closes it).
 
-**Verified reference (may be gone in a later session; the plan is self-sufficient):** `/private/tmp/claude-501/-Users-nikitakhilobok-Documents-projects-my-alatyr-flutter/274f6fc9-972b-474e-8cfd-9d8077742bfc/scratchpad/m4-research.md` (probe facts: captured Codex hook payload, working invocations, strict schema example, Claude Code doc citations, the repo fact sheet).
+**Verified reference (may be gone in a later session; the plan is self-sufficient):** `/private/tmp/claude-501/-Users-dev-Documents-projects-my-alatyr-flutter/274f6fc9-972b-474e-8cfd-9d8077742bfc/scratchpad/m4-research.md` (probe facts: captured Codex hook payload, working invocations, strict schema example, Claude Code doc citations, the repo fact sheet).
 
 ## Global Constraints
 

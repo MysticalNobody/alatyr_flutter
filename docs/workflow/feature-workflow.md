@@ -45,6 +45,20 @@ independent AI reviews; the human decides" hold in practice.
 9. **Human behavioral check** for any UI-affecting change (Definition of
    Done item 5) — the one layer that stays human by design.
 
+## The proofs beyond the gate
+
+DoD 3's "critical flows are touched" and the two smokes, made mechanical
+— run the proof when the diff matches, no judgment calls:
+
+- `tool/e2e.sh` (every locally reachable platform): the diff touches
+  `app/`, a `feature_*` package, `data_local`, or
+  `docs/reference/critical_flows.md`.
+- `tool/web_smoke.sh`: the diff touches `app/web/`, `data_local`, or
+  bumps drift/`sqlite3`.
+- `tool/template_smoke.sh` (template repo only): the diff touches
+  `tool/init.dart`, `tool/src/init_*`, or a path `templateOnlyPaths`
+  names.
+
 ## Roles
 
 | Role | Responsibility |
