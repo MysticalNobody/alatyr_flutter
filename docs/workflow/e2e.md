@@ -9,7 +9,7 @@ tool/e2e.sh android                         # or ios; --device <id>, --list, -t 
   `tool/e2e.yaml`: Android AVD `e2e_pixel` (`pixel_7` profile, API 34, the
   arm64 or x86_64 system image per host architecture), iOS simulator
   `e2e_iphone` on an `iPhone 16`, matched to the newest installed "iOS
-  18.x" runtime by major version (an exact `18.0` runtime is rarely what a
+  26.x" runtime by major version (an exact `26.0` runtime is rarely what a
   dev machine has). No "first available device" fallback — a running
   emulator is reused only if it IS the declared AVD. `E2E_EMULATOR_PORT`
   (default `5554`) picks a different console port when that one is busy.

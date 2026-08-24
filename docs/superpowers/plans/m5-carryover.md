@@ -60,6 +60,13 @@ upgrade pass.
   elsewhere (an `.xcconfig`, a workspace settings file), the check passes
   silently instead of failing loud.
 
+- **patrol_cli 4.7.0 console summary under Xcode 26** — on iOS 26.2
+  (Xcode 26.2) the per-test progress lines and the CLI's own summary go
+  blank (`Total: 0`) while the run's `.xcresult` records every test and
+  the exit code stays truthful (verified 2026-08-24: 2 passed there);
+  the summary parser, not the run, is broken. Trust the exit code plus
+  the `.xcresult`; re-check on the next patrol/patrol_cli bump.
+
 ## Recorded as accepted (no action planned)
 
 - The e2e flow's two-test coupling: the fresh-process bonus test is

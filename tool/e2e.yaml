@@ -14,6 +14,6 @@ android:
 ios:
   simulator_name: e2e_iphone
   device_type: iPhone 16
-  # Matched by major version: the newest installed "iOS 18.x" runtime is
-  # used (an exact 18.0 runtime is rarely what a developer machine has).
-  runtime: "iOS 18.0"
+  # Matched by major version: the newest installed "iOS 26.x" runtime is
+  # used (an exact 26.0 runtime is rarely what a developer machine has).
+  runtime: "iOS 26.0"
