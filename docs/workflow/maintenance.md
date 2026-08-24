@@ -54,10 +54,8 @@ Verified against pub.dev and the patrol compatibility table on
 All three are pinned together: `patrol_finders 3.6.0` and `patrol 4.9.0`
 in `app/pubspec.yaml`, `patrol_cli 4.7.0` as the global activation
 `tool/e2e.sh` checks for at run time. The `patrol_cli` version itself is
-pinned in **two** places that must move together on any bump:
-`PATROL_CLI_VERSION` in `tool/e2e.sh` (checked against `patrol
---version`) and the same literal in `.github/workflows/e2e.yml`'s
-activate step. Re-verify the full compatibility table on any bump —
+pinned once, as `PATROL_CLI_VERSION` in `tool/e2e.sh` (checked against
+`patrol --version`). Re-verify the full compatibility table on any bump —
 patrol's finder API and its e2e runner version in lockstep.
 
 ## Codex model and CLI

@@ -50,7 +50,7 @@ independent AI reviews; the human decides" hold in practice.
 | Role | Responsibility |
 |---|---|
 | Agent (implements) | Proposes the graph diff, writes `*_api`/impl/`app/` code and every layer of tests, runs the inner loop, dispatches the adversarial pass, evaluates review findings, writes the completion report. |
-| Tools (verify) | `tool/checks.sh` — graph, imports, lints, codegen freshness, purity, analyze, tests — mechanically, the same locally and in CI. |
+| Tools (verify) | `tool/checks.sh` — graph, imports, lints, codegen freshness, purity, analyze, tests — mechanically, the same on every machine. |
 | Codex (reviews) | Independent, read-only second reader of the diff against `## Code Review Rules`; a verdict to evaluate, never to obey blindly. |
 | Human (decides) | Exactly two checkpoints: approves the graph diff before code is written; performs the behavioral check for UI-affecting changes. |
 

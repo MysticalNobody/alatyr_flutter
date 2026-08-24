@@ -430,7 +430,8 @@ void main() {
     'an unreadable tracked file aborts after the destructive step',
     () {},
     skip:
-        'deliberate: chmod 000 does not deny root (CI runs as root), so the '
+        'deliberate: chmod 000 does not deny root (a containerized gate host '
+        'typically runs as root), so the '
         'scenario is not reproducible on every gate host. The CLI now prints '
         'the FileSystemException message plus the documented recovery command '
         'instead of a stack trace (tool/init.dart _guarded).',

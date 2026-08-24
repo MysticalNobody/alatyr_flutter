@@ -66,7 +66,7 @@ alatyr_flutter/
 │   ├── feature_settings_api/   # feature_api: contracts only
 │   └── feature_settings/       # feature_impl: bloc, screen, repository, module
 ├── lints/             # first-party analyzer plugin (not a workspace member)
-├── tool/              # tool/checks.sh — the one quality gate, locally and in CI
+├── tool/              # tool/checks.sh — the one quality gate (ADR-0004)
 ├── test/              # fixture tests for the toolchain itself
 ├── docs/              # architecture, ADRs, testing, workflow, reference
 └── .claude/ .codex/   # hooks, rules, skills, review config for both agents

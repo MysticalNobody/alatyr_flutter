@@ -26,7 +26,6 @@ const requiredDocs = [
   'docs/testing/strategy.md',
   'docs/testing/widget-test-guardrails.md',
   'docs/workflow/getting-started.md',
-  'docs/workflow/instantiation.md',
   'docs/workflow/e2e.md',
   'docs/workflow/feature-workflow.md',
   'docs/workflow/maintenance.md',
@@ -123,7 +122,7 @@ void main() {
             .split('\u0000')
             .where((s) => s.isNotEmpty);
     // Untracked-but-not-ignored files are scanned too: a brand-new file with
-    // Russian text must fail the local gate, not only CI after it lands.
+    // Russian text must fail the gate before it is ever committed.
     // Gitignored paths (the `*.ru.md` twins, CLAUDE.local.md) stay excluded.
     final candidates = [
       ...lsFiles(['-z']),

@@ -32,7 +32,7 @@ One page per topic, newest facts first, always true of the current commit:
 - [adr/0003-test-strategy.md](adr/0003-test-strategy.md) — patrol finders,
   opt-in goldens, no coverage floor.
 - [adr/0004-single-gate.md](adr/0004-single-gate.md) — one `tool/checks.sh`
-  locally and in CI.
+  on every machine; a future CI runs it verbatim.
 - [adr/0005-cross-review-protocol.md](adr/0005-cross-review-protocol.md) —
   Codex as an independent reviewer.
 - [adr/0006-working-placeholder-instantiation.md](adr/0006-working-placeholder-instantiation.md)
@@ -52,8 +52,9 @@ One page per topic, newest facts first, always true of the current commit:
 - [workflow/getting-started.md](workflow/getting-started.md) —
   prerequisites, clone-to-green-gate walkthrough, running the app, and
   the one-time Claude Code / Codex trust steps.
-- [workflow/instantiation.md](workflow/instantiation.md) — `tool/init.dart`
-  in full: the rename plan, the bundle-id grammar, what it deletes.
+- `workflow/instantiation.md` — `tool/init.dart` in full: the rename
+  plan, the bundle-id grammar, what it deletes. Template-repo only —
+  init deletes the page along with the tool it documents.
 - [workflow/e2e.md](workflow/e2e.md) — `tool/e2e.sh` in full: the device
   spec, the `patrol_cli` pin, exit codes, disk cleanup.
 - [workflow/feature-workflow.md](workflow/feature-workflow.md) — the
@@ -71,8 +72,9 @@ One page per topic, newest facts first, always true of the current commit:
   machine-readable dependency graph every enforcer parses.
 - [reference/critical_flows.md](reference/critical_flows.md) — the e2e
   test-plan registry; `tool/checks.sh` gate-checks every row.
-- [reference/ci_contract.md](reference/ci_contract.md) — what CI runs
-  and owns: `ci.yml`, `e2e.yml`, `template-smoke.yml`.
+- [reference/ci_contract.md](reference/ci_contract.md) — no CI is
+  wired today (verification is local); the contract any future
+  runner must keep.
 - [reference/feature_package_skeletons.md](reference/feature_package_skeletons.md)
   — the file trees the graph-first ritual produces for a new feature
   package pair.

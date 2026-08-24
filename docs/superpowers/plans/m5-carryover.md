@@ -9,17 +9,17 @@ upgrade pass.
 
 ## Open
 
-- **`e2e.yml` on hosted runners is unverified** — advisory
-  (`continue-on-error: true`) until it is green on a handful of real PRs
-  (spec §15 risk 5); flip it to a required check once it has that track
-  record.
-- **iOS e2e in CI** — `tool/e2e.sh ios` is local-only today; a macOS
-  runner job is unscheduled (cost and macOS-runner-minutes budget, not a
-  technical blocker).
-- **Web runtime smoke as an automated check** — `tool/web_smoke.sh`
-  proves persistence locally with headless Chrome but is not wired into
-  any CI workflow; consider a `template-smoke.yml`-style job once
-  headless-Chrome-on-CI cost/flakiness is weighed.
+- **No CI is wired** — the three workflows (`ci.yml`,
+  `template-smoke.yml`, advisory `e2e.yml`) were removed on 2026-08-24
+  in favor of local-only verification, before ever executing on a hosted
+  runner (`docs/reference/ci_contract.md` records the decision; git
+  history keeps the YAML). Reintroduction is one deliberate pass that
+  must close, in order: hosted-runner gate viability (sqlite3-hook
+  download, no `libsqlite3-dev`), the template smoke as a job, Android
+  e2e as an advisory job until green on real PRs (KVM/emulator
+  viability, spec §15 risk 5), iOS e2e on a macOS runner (cost call),
+  `tool/web_smoke.sh` as a job (headless-Chrome cost/flakiness call),
+  and Codex `/hooks` trust on untrusted runners.
 - **`patrol` dev dependency vs release builds** — `patrol`/
   `patrol_finders` are `dev_dependencies` in `app/pubspec.yaml`; verify a
   real `flutter build` (release, every platform) actually excludes them
@@ -28,11 +28,6 @@ upgrade pass.
   keeps it `false` (the Flutter-template default); patrol's Gradle
   integration with the newer built-in-Kotlin path is unverified and worth
   a compatibility pass before flipping it.
-- **Codex `/hooks` trust on CI** — CI runners start untrusted for Codex
-  hooks by construction (no interactive `/hooks` step); if Codex ever runs
-  unattended in a workflow, the codegen-freshness gate remains the
-  backstop, but this deserves a deliberate design pass rather than being
-  an accident of omission.
 - **`AppDatabase.open`'s web `onResult` logging** — drift's web open path
   can report which storage implementation it actually chose (`opfsLocks`
   vs `sharedIndexedDb`); `packages/data_local` does not log it today, so a
@@ -64,11 +59,6 @@ upgrade pass.
   directly; if a future Xcode or Flutter template moves signing config
   elsewhere (an `.xcconfig`, a workspace settings file), the check passes
   silently instead of failing loud.
-- **`PATROL_CLI_VERSION` pinned in two places** (T6 review minor):
-  `tool/e2e.sh` and `.github/workflows/e2e.yml` each hardcode the same
-  version literal with no single source of truth between them (unlike the
-  Codex model pin, which lives in exactly one file); a bump that updates
-  one and forgets the other fails quietly until the next e2e run.
 
 ## Recorded as accepted (no action planned)
 
@@ -104,8 +94,8 @@ upgrade pass.
   feature with a secret receives it through its module factory.
 - The settings failure banner has no dismissal path (stays until the
   stored value actually changes) - product decision.
-- Codex hooks depend on per-checkout trust (`/hooks`); CI runners and
-  fresh clones are unprotected by the hook until trusted - the
+- Codex hooks depend on per-checkout trust (`/hooks`); fresh clones
+  (and any future CI runner) are unprotected by the hook until trusted - the
   cold-rebuild freshness gate is the enforcement of record for
   invariant 5.
 - The Stop-hook review gate is documented as opt-in hardening, not wired.

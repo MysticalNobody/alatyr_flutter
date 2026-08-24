@@ -15,8 +15,8 @@ tool/e2e.sh android                         # or ios; --device <id>, --list, -t 
   (default `5554`) picks a different console port when that one is busy.
 - **`patrol_cli`** must match the version pinned in `tool/e2e.sh` (checked
   against `patrol --version`); a mismatch fails with the exact activate
-  command to run. See `docs/workflow/maintenance.md` for how this pin is
-  kept in lockstep with `.github/workflows/e2e.yml`.
+  command to run. See `docs/workflow/maintenance.md` for the pin's
+  upgrade rules.
 - **Exit codes:** `0` every test passed; patrol's own non-zero exit on
   test failures/errors; `2` usage; `3` e2e not performed (reason on
   stderr — report it verbatim, never fabricate a result); `124`

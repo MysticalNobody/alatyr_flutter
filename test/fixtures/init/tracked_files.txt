@@ -1,5 +1,4 @@
 .claude/settings.json
-.github/workflows/template-smoke.yml
 AGENTS.md
 README.md
 app/README.md

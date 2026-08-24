@@ -25,7 +25,7 @@ final class InitReport {
 }
 
 /// Paths init removes (spec section 9 step 6): the init machinery, the
-/// template-only tests and CI, and the template's planning history.
+/// template-only tests and docs, and the template's planning history.
 const templateOnlyPaths = [
   'tool/init.dart',
   'tool/src/init_identity.dart',
@@ -38,7 +38,6 @@ const templateOnlyPaths = [
   'test/init_cli_test.dart',
   'test/fixtures/init',
   'test/template_identity_test.dart',
-  '.github/workflows/template-smoke.yml',
   'docs/workflow/instantiation.md',
   'docs/superpowers',
 ];

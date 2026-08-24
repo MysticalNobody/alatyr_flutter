@@ -1,7 +1,9 @@
 # Alatyr — Flutter Starter for AI-Agent Development: Design
 
 - **Date:** 2026-08-13
-- **Status:** approved; implementation complete (M5 done)
+- **Status:** approved; implementation complete (M5 done). Post-M5: the
+  §11 CI workflows were removed 2026-08-24 in favor of local-only
+  verification (`docs/reference/ci_contract.md`)
 - **Scheme:** Claude Code implements, OpenAI Codex cross-reviews
 
 ## 1. Purpose and constraints

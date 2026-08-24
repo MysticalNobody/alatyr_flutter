@@ -1,2 +1,0 @@
-name: template-smoke
-on: [workflow_dispatch]

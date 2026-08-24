@@ -27,8 +27,9 @@ trust steps both agents need.
 Template-repo only: this checkout carries a placeholder identity
 (`alatyr_starter` / `dev.alatyr` / `Alatyr Starter`) — run
 `tool/init.dart` before anything else, or skip this step once you have.
-See [`docs/workflow/instantiation.md`](instantiation.md) for the command,
-the bundle-id grammar, and what it deletes.
+See `docs/workflow/instantiation.md` for the command, the bundle-id
+grammar, and what it deletes (the page deletes itself with init — if
+it is missing, this step is already done).
 
 ## First gate run
 
