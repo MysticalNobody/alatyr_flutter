@@ -28,6 +28,8 @@ The repo you are looking at is not template output rendered by a separate
 generator — it is a fully working, buildable, analyzable Flutter project
 today, complete with one worked example feature (`feature_settings`,
 theme-mode selection) that crosses every architectural layer end to end.
+It is a clean-room implementation: earlier ReviDeck work informed the
+architecture, but no ReviDeck code or product artifacts were carried over.
 
 ## Quick start
 
@@ -41,8 +43,8 @@ theme-mode selection) that crosses every architectural layer end to end.
    ```
    One-shot and self-deleting: it prints the rename plan, asks to confirm
    (skip with `--yes`), then rewrites the identity, deletes the init
-   machinery and `docs/superpowers/`, and runs `dart pub get` +
-   `tool/checks.sh --fast` for you.
+   machinery and its tests, and runs `dart pub get` + `tool/checks.sh --fast`
+   for you.
 3. Commit the result, then run the full gate:
    ```bash
    tool/checks.sh

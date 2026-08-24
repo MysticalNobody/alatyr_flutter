@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Cross-review runner (spec section 7). Runs OpenAI Codex as a READ-ONLY
+# Cross-review runner (docs/adr/0005-cross-review-protocol.md). Runs Codex as a READ-ONLY
 # reviewer of this branch's diff and writes its verdict to a file. Used by
 # the /cross-review skill, the codex-reviewer subagent, and humans.
 #

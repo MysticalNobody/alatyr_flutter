@@ -30,5 +30,16 @@ tool/e2e.sh android                         # or ios; --device <id>, --list, -t 
 - **Disk:** a local `patrol test`, like `flutter build`, leaves
   0.5–2 GB under `app/build` — delete it after each proof step.
 
+On iOS 26.2/Xcode 26.2, `patrol_cli 4.7.0` may print blank progress and a
+`Total: 0` summary even when the run succeeded; the generated `.xcresult`
+records the tests and the process exit code remains authoritative. Check both,
+and re-verify the console summary on the next patrol/patrol_cli bump.
+
+The iOS `RunnerUITests` target is committed directly in
+`app/ios/Runner.xcodeproj/project.pbxproj`. Its one-off Ruby/xcodeproj
+generator is not shipped. If a Flutter or Xcode regeneration replaces that
+project structure, recreate the target from Patrol's current setup guidance or
+write a new generator — there is no retained script to rerun.
+
 See [`docs/reference/critical_flows.md`](../reference/critical_flows.md)
 for the registered flow this drives.

@@ -101,8 +101,8 @@ and never silently skipped.
 `tool/codegen.sh [--cold]` · `tool/e2e.sh` (patrol e2e; device spec in
 `tool/e2e.yaml`). `fvm dart run tool/init.dart --name … --org …` is
 template-repo only: it renames the placeholder identity, then deletes
-itself, its tests, and `docs/superpowers/` — read this from an
-instantiated project and that command is gone on purpose, not missing. A
+itself and its tests — read this from an instantiated project and that
+command is gone on purpose, not missing. A
 PostToolUse hook formats every Dart file you edit (both agents); do not
 fight it — never re-patch to undo formatting.
 

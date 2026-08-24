@@ -29,8 +29,8 @@ android {
         // Patrol e2e (tool/e2e.sh). The orchestrator (testOptions below) runs
         // every Dart test in its own process. That process boundary is NOT
         // what the registered critical flow calls a "restart": that flow
-        // re-invokes the app entrypoint within a single test (spec section 8's
-        // convention, docs/reference/critical_flows.md). The boundary is what
+        // re-invokes the app entrypoint within a single test (the convention in
+        // docs/reference/critical_flows.md). The boundary is what
         // the second, bonus test in integration_test/settings_theme_test.dart
         // spends to prove real OS process death. Patrol's docs also set
         // testInstrumentationRunnerArguments["clearPackageData"] = "true" -

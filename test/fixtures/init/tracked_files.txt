@@ -28,7 +28,6 @@ app/windows/runner/main.cpp
 docs/adr/0006-working-placeholder-instantiation.md
 docs/architecture/01-overview.md
 docs/reference/package_graph.yaml
-docs/superpowers/plans/x.md
 docs/workflow/instantiation.md
 pubspec.yaml
 test/fixtures/init/tracked_files.txt

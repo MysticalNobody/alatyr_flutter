@@ -216,7 +216,6 @@ void main() {
   );
 
   test('the report lists what changed; a short name needs no reformatting', () {
-    expect(report.deleted, contains('docs/superpowers'));
     expect(report.movedDirs, hasLength(2));
     expect(
       report.changedDartFiles,
@@ -230,7 +229,7 @@ void main() {
   });
 
   test(
-    'a long name breaks formatting until the CLI format step runs (spec section 9 step 7)',
+    'a long name breaks formatting until the documented CLI format step runs',
     () {
       final dir = Directory.systemTemp.createTempSync('init_long');
       addTearDown(() => dir.deleteSync(recursive: true));
@@ -452,7 +451,7 @@ void main() {
     skip:
         'deliberate: the CLI deletes itself in step 1, so a rerun is '
         'structurally impossible; post-init identity changes are a manual '
-        'operation (spec section 9, deliberate YAGNI).',
+        'operation (ADR-0006, deliberate YAGNI).',
   );
 }
 

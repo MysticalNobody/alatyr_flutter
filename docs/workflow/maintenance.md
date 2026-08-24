@@ -59,6 +59,16 @@ pinned once, as `PATROL_CLI_VERSION` in `tool/e2e.sh` (checked against
 `patrol --version`). Re-verify the full compatibility table on any bump —
 patrol's finder API and its e2e runner version in lockstep.
 
+Two release/toolchain assumptions remain deliberately unclaimed:
+
+- `patrol` and `patrol_finders` are `dev_dependencies`, but their exclusion
+  from shipped artifacts has not been proved by classification alone. Before
+  a release, build every supported platform in release mode and inspect the
+  artifacts/dependency graph.
+- Keep `android.builtInKotlin=false`. Patrol 4.9's Gradle integration with
+  Flutter's built-in-Kotlin path is unverified; flip it only after an Android
+  e2e compatibility pass.
+
 ## Codex model and CLI
 
 - **Model pin:** `review_model` in `.codex/config.toml`, read by
@@ -90,6 +100,21 @@ own proof step.
 Hooks and path-scoped rules (`.claude/settings.json`, `.claude/rules/`)
 were verified against Claude Code `2.1.x`. Re-check hook payload shapes
 and rule-loading behavior (`paths:` frontmatter) after a major bump.
+
+## Agent-hook payloads
+
+The generated-file guard deliberately stays dependency-free. For Claude it
+uses the first `file_path` (the tool input precedes user content); for Codex it
+parses `apply_patch` headers. Unknown shapes fail open. The Codex formatter
+similarly scans from `Updated the following files:` to the end of
+`tool_response` instead of decoding JSON, assuming that response remains the
+last key. Reordering or nesting can silently stop automatic formatting, so
+rerun the hook fixtures after either CLI changes its payload.
+
+These hooks bind Edit/Write/`apply_patch`, not shell rewrites such as `sed -i`
+or redirection. They are fast feedback only: the full gate's cold codegen
+rebuild plus snapshot comparison is the enforcement of record, and its format
+stage catches a formatter hook that stopped matching.
 
 ## The `provider`-via-`flutter_bloc` transitive note
 

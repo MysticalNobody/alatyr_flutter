@@ -9,9 +9,7 @@ what this template refuses to ship. The template repository's own git
 history keeps all three as a starting point for reintroduction
 (`git log --diff-filter=D -- '.github/workflows/*'`); an instantiated
 copy has no such history — there, recreate the YAML from the notes
-below. The open concerns a reintroduction must close are listed in the
-post-M5 backlog (`docs/superpowers/plans/m5-carryover.md`) while it
-exists.
+below.
 
 ## What runs instead — all local
 
@@ -45,6 +43,22 @@ codegen-freshness stage running outside a git worktree, where it cannot
 compare anything. CI without a worktree is a setup bug, not a pass.
 `tool/e2e.sh` likewise shuts booted devices down when `CI` is truthy and
 keeps them alive locally.
+
+## Reintroduction checklist
+
+Reintroduce CI as one deliberate pass, in this order:
+
+1. Prove `tool/checks.sh` on a hosted runner, including outbound HTTPS for
+   sqlite3's hook and no `libsqlite3-dev` workaround.
+2. Add `tool/template_smoke.sh` as its own job.
+3. Add Android e2e as advisory until representative green PR runs establish
+   KVM, emulator boot, and cache viability; only then make it required.
+4. Explicitly accept macOS-runner cost before adding iOS e2e.
+5. Explicitly accept headless-Chrome cost and flakiness before adding
+   `tool/web_smoke.sh`.
+6. Never treat agent hooks as enforcement on an untrusted ephemeral runner.
+   Codex `/hooks` requires per-checkout trust; the cold codegen-freshness gate
+   remains authoritative.
 
 ## Environment notes for a future runner
 

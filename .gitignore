@@ -1,6 +1,7 @@
 # Local-only development artifacts of the template itself.
-# Russian doc twins exist only during template development and never ship.
+# Russian doc twins and Superpowers working plans never ship.
 *.ru.md
+/docs/superpowers/
 CLAUDE.local.md
 .DS_Store
 .dart_tool/

@@ -8,8 +8,8 @@
 // tests below is a real process death - the file-backed database is reopened
 // from disk - which no single-test API can produce (patrol has no "relaunch
 // app" call; `pressHome` + `openApp` only backgrounds and foregrounds the
-// same process). The registered flow restarts in-process instead (spec
-// section 8's convention, see below); the second test below is the bonus
+// same process). The registered flow restarts in-process instead (the
+// convention in docs/reference/critical_flows.md); the second test is the bonus
 // that spends this process boundary.
 //
 // Consequences, both deliberate:
@@ -49,7 +49,7 @@ Future<AppDependencies> _launch(PatrolIntegrationTester $) async {
 
 void main() {
   // THE registered critical flow (docs/reference/critical_flows.md). Its
-  // "restart" is the convention spec section 8 fixes: the app entrypoint
+  // "restart" follows docs/reference/critical_flows.md: the app entrypoint
   // is re-invoked within the test - a fresh widget tree and DI graph - and
   // with production dependencies that means the on-disk database is closed
   // and reopened from the file. Self-contained: it passes alone.

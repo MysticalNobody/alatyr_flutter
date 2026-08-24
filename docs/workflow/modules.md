@@ -17,6 +17,12 @@ on the Codex side. Provides brainstorming/TDD/debugging/review discipline
 that composes with this template's harness rather than replacing it —
 nothing here assumes it is installed.
 
+Superpowers work products may live locally under `docs/superpowers/`. That
+directory is gitignored and is neither shipped nor a source of truth. Promote
+every accepted decision into the relevant architecture, ADR, testing,
+workflow, or reference document before relying on it; the local plan may then
+change or disappear without losing the decision.
+
 ## spec-kit — optional, per-feature spec ceremony
 
 For a real product that wants formal per-feature spec ceremony beyond this

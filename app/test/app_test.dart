@@ -79,7 +79,7 @@ void main() {
       await $(#settings.theme_mode.dark).tap();
 
       // "Restart" = a NEW widget tree and DI graph over the same storage (the
-      // convention spec section 8 records for critical flows). Unmount first:
+      // convention in docs/reference/critical_flows.md). Unmount first:
       // pumping a second `App` straight over the first would update the
       // existing element and keep `_AppState`'s router and stream bound to
       // the old dependencies - the test would pass without proving anything.

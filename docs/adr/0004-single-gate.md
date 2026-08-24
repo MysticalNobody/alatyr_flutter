@@ -24,6 +24,14 @@ additional logic of its own (none is wired today — see
 invocation runs under a hard OS wall-clock timeout that names the
 offending package.
 
+Generated outputs are committed and must not be gitignored: the cold rebuild
+can prove freshness only by comparing regenerated files with tracked output.
+The workspace commits one root `pubspec.lock`; member lockfiles do not exist,
+and the same snapshot stage rejects an unresolved root lockfile. Codegen stays
+one invocation per package declaring `build_runner`: its unit-tested plan
+names the failing package, while `build_runner --workspace` does not preserve
+that attribution.
+
 ## Consequences
 
 There is nothing a PR can pass in CI that a contributor could not have
@@ -32,6 +40,9 @@ the local script. A stale generated file or an unresolved `pubspec.lock`
 is caught by the snapshot-diff stage before it can hide behind "it built
 fine for me." A hung plugin host or a runaway codegen builder fails loudly
 with a named package instead of stalling the whole run indefinitely.
+The full tier deliberately repeats analysis per member after root analysis;
+the extra time buys package-specific failure attribution while the root run
+keeps the whole workspace, root tools, and plugin diagnostics covered.
 
 ## Alternatives considered
 

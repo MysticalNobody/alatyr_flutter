@@ -12,8 +12,7 @@ cd "$ROOT_DIR"
 # --cold: drop each package's build_runner cache first. The gate's freshness
 # stage needs a REAL regeneration: a warm cache only re-runs builders whose
 # tracked inputs changed, so a hand-edited generated file would survive the
-# before/after snapshot compare (found in M3, Task 5 review). Developers
-# keep the warm default.
+# before/after snapshot compare. Developers keep the warm default.
 COLD=false
 case "${1:-}" in
   --cold) COLD=true ;;

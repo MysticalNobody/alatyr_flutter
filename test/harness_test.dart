@@ -3,7 +3,7 @@ import 'dart:io';
 
 import 'package:test/test.dart';
 
-/// The harness's own invariants (spec section 4): the contract stays under
+/// The harness's own invariants (AGENTS.md): the contract stays under
 /// Codex's comfortable budget, Claude imports it rather than duplicating
 /// it, and every path-scoped rule declares the paths it binds to.
 void main() {

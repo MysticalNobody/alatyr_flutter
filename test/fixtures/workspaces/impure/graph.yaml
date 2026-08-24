@@ -1,8 +1,8 @@
 package_kinds: [base, feature_api, feature_impl, app_root]
 
 banned_packages:
-  get_it: "manual constructor DI (spec section 5)"
-  injectable: "manual constructor DI (spec section 5)"
+  get_it: "manual constructor DI (ADR-0002)"
+  injectable: "manual constructor DI (ADR-0002)"
   riverpod: "bloc is the canonical state management"
   flutter_riverpod: "bloc is the canonical state management"
   provider: "bloc is the canonical state management"
