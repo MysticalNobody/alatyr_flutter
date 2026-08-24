@@ -273,18 +273,25 @@ ProcessResult formatChangedDart({
   ...files,
 ], workingDirectory: rootDir);
 
+/// The canonical template URL, the default `--template-url`. Lives here
+/// (template-only code) and not in any shipped doc requirement: an
+/// instantiated copy carries it only as the README backlink.
+const alatyrTemplateUrl = 'https://github.com/MysticalNobody/alatyr_flutter';
+
 String _rootReadme(InitTarget to, String? templateUrl) {
-  final origin = templateUrl == null
-      ? 'the Alatyr Flutter template'
-      : '[the Alatyr Flutter template]($templateUrl)';
+  final origin =
+      '[the Alatyr Flutter template](${templateUrl ?? alatyrTemplateUrl})';
   return '''
 # ${to.displayName}
 
 Flutter app generated from $origin. The architecture, the workflow and the
 quality gate are documented in [docs/README.md](docs/README.md); coding
-agents start at [AGENTS.md](AGENTS.md).
+agents start at [AGENTS.md](AGENTS.md). Machine prerequisites (Flutter via
+fvm, platform SDKs, coreutils) are listed in
+[docs/workflow/getting-started.md](docs/workflow/getting-started.md).
 
 ```bash
+fvm install
 fvm flutter pub get
 tool/checks.sh
 ```
