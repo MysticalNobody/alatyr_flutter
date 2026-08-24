@@ -28,9 +28,11 @@ after a render step. `packages/`, `lints/`, and `tool/` are
 product-neutral by construction and never contain the placeholder tokens
 — `tool/init.dart` derives them at runtime from the app shell instead of
 spelling them, so a fixture test can assert their absence directly by
-grepping. Instantiation therefore touches only `app/` and native shells,
-the root `pubspec.yaml`, `docs/reference/package_graph.yaml`, and
-`README.md`.
+grepping. Instantiation rewrites every tracked file that carries a
+placeholder token - `app/` and the native shells, the root `pubspec.yaml`,
+`docs/reference/package_graph.yaml`, `README.md`, and the docs and root
+tests that name the placeholder in prose - except `docs/adr/` and the
+template-only paths it deletes outright.
 
 Apple bundle ids forbid underscores, so org+name yields two sibling
 identifiers from one input: Android/Linux/web get the snake form

@@ -33,22 +33,6 @@ upgrade pass.
   vs `sharedIndexedDb`); `packages/data_local` does not log it today, so a
   silent fallback to the slower backend is invisible outside the browser
   console.
-- **`formatChangedDart` on an empty changed-files list** (T5 review
-  minor): passing zero paths runs `dart format` with no arguments at all,
-  which formats the whole working tree rather than doing nothing, and can
-  surface a non-zero (`64`) exit only after `runInit`'s destructive
-  rewrite/delete step has already run — there is no guard for a
-  degenerate rename that touches no Dart files.
-- **`--name` colliding with an existing workspace member** (T5 review
-  minor): `validateTarget` checks the name is a legal Dart identifier but
-  never checks it against `design_system`, `data_local`, etc.; a
-  collision would surface later, mid-rewrite, instead of up front as a
-  clean usage error.
-- **`init` has no rollback hint** (T5 review minor): a failed or
-  interrupted run leaves a partially rewritten tree with no built-in
-  "undo"; the recovery path is the ordinary git one —
-  `git checkout -- . && git clean -fd` — but the tool does not say so on
-  failure.
 - **Codex PostToolUse payload extractor assumes `tool_response` is the
   last JSON key** (T6 review minor): `tool/hooks/format_dart.sh`'s
   `apply_patch` branch greps for "Updated the following files:" rather

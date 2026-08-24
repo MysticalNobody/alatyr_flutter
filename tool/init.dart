@@ -68,7 +68,9 @@ void main(List<String> args) {
     _usage('--name and --org are required');
   }
 
-  // Argument errors exit 2 before anything destructive happens.
+  // Argument errors exit 2 before anything destructive happens - including
+  // the ones that need the placeholder identity, so it is derived first
+  // (reading the app shell touches nothing).
   final members = _guarded(() => workspaceMemberNames(root));
   final InitTarget to;
   try {
@@ -84,7 +86,20 @@ void main(List<String> args) {
   } on InitArgumentException catch (e) {
     _usage(e.message);
   }
+  // Only now the placeholder, so an argument that is malformed on its own
+  // stays exit 2 even in a tree init cannot derive an identity from.
   final from = _guarded(() => deriveIdentity(root));
+  try {
+    validateNotPlaceholder(
+      to: to,
+      placeholderOrg: from.org,
+      placeholderPackageName: from.packageName,
+      placeholderDisplayName: from.displayName,
+      placeholderWorkspaceName: from.workspaceName,
+    );
+  } on InitArgumentException catch (e) {
+    _usage(e.message);
+  }
   final tracked = _trackedFiles(root);
 
   stdout

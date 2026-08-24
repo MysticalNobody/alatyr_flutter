@@ -10,7 +10,7 @@ import 'package:test/test.dart';
 const _fakeAdb = r'''#!/usr/bin/env bash
 if [[ "${1:-}" == "devices" ]]; then
   echo "List of devices attached"
-  printf 'emulator-5554\tdevice\n'
+  printf 'emulator-5554\t%s\n' "${E2E_FAKE_STATE:-device}"
   exit 0
 fi
 if [[ "${3:-}" == "emu" && "${4:-}" == "avd" && "${5:-}" == "name" ]]; then
@@ -75,6 +75,7 @@ void main() {
     List<String> args, {
     String console = 'ok',
     String flutter = 'ok',
+    String state = 'device',
   }) => Process.run(
     'bash',
     ['tool/e2e.sh', ...args],
@@ -85,6 +86,7 @@ void main() {
       'E2E_FAKE_DART': Platform.resolvedExecutable,
       'E2E_FAKE_AVD': avdName,
       'E2E_FAKE_CONSOLE': console,
+      'E2E_FAKE_STATE': state,
       'E2E_FAKE_FLUTTER': flutter,
       'E2E_FAKE_PATROL_VERSION': patrolVersion,
     },
@@ -143,6 +145,16 @@ void main() {
     expect(r.exitCode, 3, reason: '${r.stdout}${r.stderr}');
     expect(r.stderr, contains('e2e not performed'));
     expect(r.stderr, contains('emulator-5554'));
+  });
+
+  test('an emulator that is still booting is reported, not ignored', () async {
+    // `offline` is what an emulator shows while it boots. It cannot answer
+    // the console query, and it holds the console port e2e.sh would boot on:
+    // ignoring it used to mean launching a second emulator on a taken port.
+    final r = await runE2e(['android'], state: 'offline');
+    expect(r.exitCode, 3, reason: '${r.stdout}${r.stderr}');
+    expect(r.stderr, contains('e2e not performed'));
+    expect(r.stderr, contains('emulator-5554(offline)'));
   });
 
   test('fvm failing to resolve the pinned Flutter SDK is exit 3', () async {

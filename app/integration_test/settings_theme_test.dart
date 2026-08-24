@@ -56,7 +56,21 @@ void main() {
   patrolTest('settings: choose dark, restart the app, dark is restored', (
     $,
   ) async {
-    final first = await _launch($);
+    var first = await _launch($);
+
+    // Light first, and it must survive a restart. Without this leg the flow
+    // can false-pass on a device an interrupted run left holding `dark`: a
+    // save path regressed to a no-op would still satisfy every assertion
+    // below, using the stale value. Proving persistence for a value that is
+    // NOT the one under test is what makes the dark leg mean something.
+    await $(SettingsKeys.themeModeTile(ThemeMode.light)).tap();
+    expect(_isSelected($, ThemeMode.light), isTrue);
+    await $.pumpWidget(const SizedBox.shrink());
+    await first.dispose();
+    first = await _launch($);
+    expect(_isSelected($, ThemeMode.light), isTrue);
+    expect(_themeMode($), ThemeMode.light);
+
     await $(SettingsKeys.themeModeTile(ThemeMode.dark)).tap();
     expect(_themeMode($), ThemeMode.dark);
     expect(_isSelected($, ThemeMode.dark), isTrue);

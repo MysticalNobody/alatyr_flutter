@@ -104,7 +104,15 @@ case "$PLATFORM" in
       # A running emulator is reused ONLY if it is the declared AVD; any
       # other running emulator is an error, not a fallback.
       others=""
-      for serial in $("$ADB" devices | awk '/^emulator-[0-9]+[[:space:]]+device/ {print $1}'); do
+      # Every emulator line, not only the ready ones: an emulator still
+      # booting shows as `offline` and cannot answer the console query, yet
+      # it holds the console port this script may be about to boot on.
+      while read -r serial state; do
+        [[ -n "$serial" ]] || continue
+        if [[ "$state" != "device" ]]; then
+          others="$others $serial($state)"
+          continue
+        fi
         # `|| true`: an unreadable console must not abort the script with
         # adb's own status (it would read as a failed e2e run). It also
         # keeps the name adb did print before `head -n 1` closed the pipe
@@ -112,7 +120,7 @@ case "$PLATFORM" in
         avd="$("$ADB" -s "$serial" emu avd name 2>/dev/null | head -n 1 | tr -d '\r')" || true
         if [[ "$avd" == "$ANDROID_AVD_NAME" ]]; then DEVICE="$serial"; echo "    using running $ANDROID_AVD_NAME ($DEVICE)"; break; fi
         others="$others $serial($avd)"
-      done
+      done < <("$ADB" devices | awk '/^emulator-[0-9]+[[:space:]]/ {print $1, $2}')
       [[ -n "$DEVICE" || -z "$others" ]] || not_performed "running emulator(s)$others are not the declared '$ANDROID_AVD_NAME' (shut them down, or pass --device <serial> to use one explicitly)"
     fi
     if [[ -z "$DEVICE" ]]; then

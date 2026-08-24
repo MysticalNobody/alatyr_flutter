@@ -193,4 +193,68 @@ void main() {
       );
     },
   );
+
+  group('a target that reuses a placeholder token is refused up front', () {
+    // The real placeholder tokens are irrelevant here: what matters is that
+    // the check compares target to placeholder, not to a literal.
+    InitTarget target({
+      String name = 'nimbus',
+      String org = 'dev.acme',
+      String? display,
+    }) => validateTarget(name: name, org: org, displayName: display);
+
+    void refuse(InitTarget to, String fragment) {
+      expect(
+        () => validateNotPlaceholder(
+          to: to,
+          placeholderOrg: 'dev.alatyr',
+          placeholderPackageName: 'alatyr_starter',
+          placeholderDisplayName: 'Alatyr Starter',
+          placeholderWorkspaceName: 'alatyr_workspace',
+        ),
+        throwsA(
+          isA<InitArgumentException>().having(
+            (e) => e.message,
+            'message',
+            contains(fragment),
+          ),
+        ),
+      );
+    }
+
+    test(
+      'the placeholder org itself: the scan would report a false survivor',
+      () {
+        refuse(target(org: 'dev.alatyr'), "is the template's own org");
+      },
+    );
+
+    test(
+      'an org extending the placeholder org: the rewrite would double it',
+      () {
+        refuse(target(org: 'dev.alatyr.apps'), 'extends');
+      },
+    );
+
+    test('the placeholder display name', () {
+      refuse(target(display: 'Alatyr Starter'), "own display name");
+    });
+
+    test('a name yielding the placeholder workspace name', () {
+      refuse(target(name: 'alatyr'), 'alatyr_workspace');
+    });
+
+    test('an unrelated identity passes', () {
+      expect(
+        () => validateNotPlaceholder(
+          to: target(),
+          placeholderOrg: 'dev.alatyr',
+          placeholderPackageName: 'alatyr_starter',
+          placeholderDisplayName: 'Alatyr Starter',
+          placeholderWorkspaceName: 'alatyr_workspace',
+        ),
+        returnsNormally,
+      );
+    });
+  });
 }

@@ -197,6 +197,51 @@ void validateTemplateUrl(String url) {
   }
 }
 
+/// The target may not reuse the placeholder's own tokens. The rewrite is a
+/// whole-token replacement and its postcondition scans the tree for the
+/// placeholder afterwards, so such a target either corrupts the output (an
+/// org that EXTENDS the placeholder org is matched a second time and doubled)
+/// or makes that scan report a false "identity survived" - and the scan runs
+/// after the deletions, the directory moves and every rewrite. Refusing here
+/// keeps the failure an argument error, before anything is touched.
+void validateNotPlaceholder({
+  required InitTarget to,
+  required String placeholderOrg,
+  required String placeholderPackageName,
+  required String placeholderDisplayName,
+  required String placeholderWorkspaceName,
+}) {
+  if (to.org == placeholderOrg) {
+    throw InitArgumentException(
+      '--org "${to.org}" is the template\'s own org: the rewrite would leave it '
+      'in place and then report it as a surviving placeholder. Pick a different org.',
+    );
+  }
+  if (to.org.startsWith('$placeholderOrg.')) {
+    throw InitArgumentException(
+      '--org "${to.org}" extends the template\'s org "$placeholderOrg": the whole-token '
+      'rewrite would match it twice and produce a doubled identifier. Pick an org that '
+      'does not start with "$placeholderOrg.".',
+    );
+  }
+  if (to.name == placeholderPackageName) {
+    throw InitArgumentException(
+      '--name "${to.name}" is the template\'s own package name; pick a different name',
+    );
+  }
+  if (to.displayName == placeholderDisplayName) {
+    throw InitArgumentException(
+      '--display-name "${to.displayName}" is the template\'s own display name; pick a different one',
+    );
+  }
+  if (to.workspaceName == placeholderWorkspaceName) {
+    throw InitArgumentException(
+      '--name "${to.name}" yields the template\'s own workspace name '
+      '"$placeholderWorkspaceName"; pick a different name',
+    );
+  }
+}
+
 InitTarget validateTarget({
   required String name,
   required String org,

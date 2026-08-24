@@ -20,7 +20,13 @@ and `docs/superpowers/` (the fixed list is `templateOnlyPaths` in
 `tool/src/init_rewrite.dart`); runs `dart format` on what it touched,
 then `dart pub get` and `tool/checks.sh --fast`. `docs/adr/` is never
 rewritten — see ADR-0006 for the full identity grammar and rationale.
-`--template-url` links the generated `README.md` back to Alatyr;
+An identity that reuses one of the template's own tokens is refused
+before anything is touched (exit 2): the same org, an org extending it
+(`dev.alatyr.apps`), the template's package or display name. The rewrite
+replaces whole tokens and then scans for leftovers, so such a target
+would either double an identifier or report a survivor that is really
+the identity you asked for. `--template-url` links the generated
+`README.md` back to Alatyr;
 `--print-identity` prints the placeholder tokens as `KEY='value'` lines
 instead of instantiating, for scripts that must not spell them
 (`tool/template_smoke.sh`).
