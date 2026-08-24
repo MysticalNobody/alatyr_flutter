@@ -261,9 +261,13 @@ String _resolve(String path) {
 /// dirty tree is refused while nothing has been touched yet, which is what
 /// makes that recovery command safe to print at all.
 void _requireCleanWorktree(String root) {
+  // --untracked-files=all: a status.showUntrackedFiles=no config would
+  // otherwise hide untracked files from the guard entirely, and clean -fd
+  // deletes exactly those.
   final result = Process.runSync('git', [
     'status',
     '--porcelain',
+    '--untracked-files=all',
   ], workingDirectory: root);
   if (result.exitCode != 0) {
     stderr.writeln(

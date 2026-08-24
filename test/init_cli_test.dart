@@ -160,6 +160,31 @@ void main() {
     );
   });
 
+  test('status.showUntrackedFiles=no cannot blind the worktree guard', () {
+    final dir = committedFixtureRepo('init_cli_dirty_hidden');
+    // A supported git config that makes plain `git status --porcelain`
+    // omit untracked files entirely - the guard must override it, or the
+    // recovery command would still delete work the guard never saw.
+    final config = Process.runSync('git', [
+      'config',
+      'status.showUntrackedFiles',
+      'no',
+    ], workingDirectory: dir);
+    expect(config.exitCode, 0, reason: '${config.stderr}');
+    File(p.join(dir, 'notes.txt')).writeAsStringSync('untracked scratch\n');
+    final r = runCli([
+      '--name',
+      'my_app',
+      '--org',
+      'com.example',
+      '--yes',
+    ], workingDirectory: dir);
+    expect(r.exitCode, 2, reason: '${r.stdout}${r.stderr}');
+    expect(r.stderr, contains('uncommitted changes'));
+    expect(r.stderr, contains('notes.txt'));
+    expect(File(p.join(dir, 'tool', 'init.dart')).existsSync(), isTrue);
+  });
+
   test('argument errors outrank the worktree guard on a dirty tree', () {
     final dir = committedFixtureRepo('init_cli_dirty_args');
     File(p.join(dir, 'notes.txt')).writeAsStringSync('untracked scratch\n');
