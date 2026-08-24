@@ -30,10 +30,17 @@ docs/adr/0006-working-placeholder-instantiation.md
 docs/architecture/01-overview.md
 docs/reference/package_graph.yaml
 docs/superpowers/plans/x.md
+docs/workflow/instantiation.md
 pubspec.yaml
+test/fixtures/init/tracked_files.txt
+test/init_cli_test.dart
+test/init_identity_test.dart
+test/init_rewrite_test.dart
+test/init_validate_test.dart
 test/purity_checker_test.dart
 test/template_identity_test.dart
 tool/init.dart
 tool/src/init_identity.dart
 tool/src/init_rewrite.dart
+tool/src/init_validate.dart
 tool/template_smoke.sh

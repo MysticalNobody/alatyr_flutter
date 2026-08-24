@@ -28,14 +28,75 @@ final _displayName = RegExp(
   r'<key>CFBundleDisplayName</key>\s*<string>([^<]+)</string>',
 );
 
-TemplateIdentity deriveIdentity(String rootDir) {
-  String read(String rel) => File(p.join(rootDir, rel)).readAsStringSync();
+/// Reads a file init cannot work without. A missing one is a `StateError`
+/// naming the path, never a raw `PathNotFoundException`.
+String _read(String rootDir, String rel) {
+  final file = File(p.join(rootDir, rel));
+  if (!file.existsSync()) {
+    throw StateError(
+      '$rel not found — init expects the full platform set of the template',
+    );
+  }
+  return file.readAsStringSync();
+}
 
-  final workspaceName = (loadYaml(read('pubspec.yaml')) as YamlMap)['name']
-      .toString();
-  final graph = loadYaml(read('docs/reference/package_graph.yaml')) as YamlMap;
+/// The `name:` of a pubspec. A missing key must not become the literal
+/// string "null" (which would silently become the derived identity).
+String _pubspecName(String rootDir, String rel) {
+  final yaml = loadYaml(_read(rootDir, rel));
+  final name = yaml is YamlMap ? yaml['name'] : null;
+  if (name == null || name.toString().trim().isEmpty) {
+    throw StateError(
+      '$rel has no "name:" key — init cannot derive an identity',
+    );
+  }
+  return name.toString();
+}
+
+/// Package names of the workspace members declared in the root
+/// `pubspec.yaml`, so init can refuse a `--name` that collides with one.
+/// Members whose pubspec is missing or nameless are skipped: this list only
+/// makes an error message possible, it is not a validation of the workspace.
+List<String> workspaceMemberNames(String rootDir) {
+  final pubspec = File(p.join(rootDir, 'pubspec.yaml'));
+  // A missing root pubspec is deriveIdentity's error to report, after the
+  // arguments have been validated.
+  if (!pubspec.existsSync()) {
+    return const [];
+  }
+  final root = loadYaml(pubspec.readAsStringSync());
+  final members = root is YamlMap ? root['workspace'] : null;
+  if (members is! YamlList) {
+    return const [];
+  }
+  final names = <String>[];
+  for (final member in members) {
+    final rel = p.join(member.toString(), 'pubspec.yaml');
+    if (!File(p.join(rootDir, rel)).existsSync()) {
+      continue;
+    }
+    try {
+      names.add(_pubspecName(rootDir, rel));
+    } on StateError {
+      continue;
+    }
+  }
+  return names;
+}
+
+TemplateIdentity deriveIdentity(String rootDir) {
+  String read(String rel) => _read(rootDir, rel);
+
+  final workspaceName = _pubspecName(rootDir, 'pubspec.yaml');
+  final graph = loadYaml(read('docs/reference/package_graph.yaml'));
+  final packages = graph is YamlMap ? graph['packages'] : null;
+  if (packages is! YamlMap) {
+    throw StateError(
+      'docs/reference/package_graph.yaml has no "packages:" map — init cannot find the app_root',
+    );
+  }
   final appRoots = [
-    for (final e in (graph['packages'] as YamlMap).entries)
+    for (final e in packages.entries)
       if ((e.value as YamlMap)['kind'] == 'app_root') e.key.toString(),
   ];
   if (appRoots.length != 1) {
@@ -43,8 +104,7 @@ TemplateIdentity deriveIdentity(String rootDir) {
       'package_graph.yaml must have exactly one app_root, found $appRoots',
     );
   }
-  final appPubspecName = (loadYaml(read('app/pubspec.yaml')) as YamlMap)['name']
-      .toString();
+  final appPubspecName = _pubspecName(rootDir, 'app/pubspec.yaml');
   if (appPubspecName != appRoots.single) {
     throw StateError(
       'app/pubspec.yaml name "$appPubspecName" != graph app_root "${appRoots.single}"',

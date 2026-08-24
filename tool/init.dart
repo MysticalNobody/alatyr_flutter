@@ -5,13 +5,14 @@ import 'src/init_rewrite.dart';
 import 'src/init_validate.dart';
 
 /// One-shot template instantiation (spec section 9). Self-deleting: the
-/// rewrite removes this file, its sources, its tests and the template-only
-/// CI. Run from the repository root of a git checkout.
+/// rewrite removes this file, its sources, its tests and the rest of
+/// `templateOnlyPaths`. Run from the repository root of a git checkout.
 ///
 /// `dart run tool/init.dart --name NAME --org ORG [--display-name TITLE]
 /// [--template-url URL] [--yes]`, or `--print-identity` to print the derived
 /// placeholder identity as `KEY='value'` lines (for scripts that must not
-/// spell it, e.g. tool/template_smoke.sh).
+/// spell it, e.g. tool/template_smoke.sh), or `--print-template-only-paths`
+/// to print the paths init deletes, one per line.
 void main(List<String> args) {
   String? name;
   String? org;
@@ -19,6 +20,7 @@ void main(List<String> args) {
   String? templateUrl;
   var yes = false;
   var printIdentity = false;
+  var printTemplateOnlyPaths = false;
   for (var i = 0; i < args.length; i++) {
     switch (args[i]) {
       case '--name':
@@ -33,13 +35,27 @@ void main(List<String> args) {
         yes = true;
       case '--print-identity':
         printIdentity = true;
+      case '--print-template-only-paths':
+        printTemplateOnlyPaths = true;
       default:
         _usage('unknown argument ${args[i]}');
     }
   }
+  if (printTemplateOnlyPaths) {
+    // Printed BEFORE init deletes them, so tool/template_smoke.sh can assert
+    // every one of them is gone without restating the list.
+    templateOnlyPaths.forEach(stdout.writeln);
+    return;
+  }
+
   final root = Directory.current.path;
-  final from = deriveIdentity(root);
+  // Everything below assumes the repository root: `git ls-files` prints paths
+  // relative to the cwd and the identity is derived from files at the root,
+  // so a run from a subdirectory would silently derive the wrong identity.
+  _requireRepositoryRoot(root);
+
   if (printIdentity) {
+    final from = _guarded(() => deriveIdentity(root));
     stdout
       ..writeln("PACKAGE_NAME='${from.packageName}'")
       ..writeln("BUNDLE_ID='${from.bundleId}'")
@@ -51,13 +67,25 @@ void main(List<String> args) {
   if (name == null || org == null) {
     _usage('--name and --org are required');
   }
-  final tracked = _trackedFiles(root);
+
+  // Argument errors exit 2 before anything destructive happens.
+  final members = _guarded(() => workspaceMemberNames(root));
   final InitTarget to;
   try {
-    to = validateTarget(name: name, org: org, displayName: displayName);
+    if (templateUrl != null) {
+      validateTemplateUrl(templateUrl);
+    }
+    to = validateTarget(
+      name: name,
+      org: org,
+      displayName: displayName,
+      workspaceMembers: members,
+    );
   } on InitArgumentException catch (e) {
     _usage(e.message);
   }
+  final from = _guarded(() => deriveIdentity(root));
+  final tracked = _trackedFiles(root);
 
   stdout
     ..writeln('Instantiating the template:')
@@ -78,26 +106,39 @@ void main(List<String> args) {
     }
   }
 
-  final report = runInit(
-    rootDir: root,
-    from: from,
-    to: to,
-    trackedFiles: tracked,
-    templateUrl: templateUrl,
+  final report = _guarded(
+    () => runInit(
+      rootDir: root,
+      from: from,
+      to: to,
+      trackedFiles: tracked,
+      templateUrl: templateUrl,
+    ),
+    afterDestructive: true,
   );
   stdout.writeln(
     'Rewrote ${report.rewritten.length} files, moved ${report.movedDirs.length} directories, deleted ${report.deleted.length} paths.',
   );
+  if (report.skipped.isNotEmpty) {
+    stdout.writeln('Skipped (symlinks): ${report.skipped.join(', ')}');
+  }
 
   // Spec section 9 step 7: format what the rename touched, resolve, smoke.
-  final format = formatChangedDart(
-    rootDir: root,
-    files: report.changedDartFiles,
-    dartExecutable: Platform.resolvedExecutable,
-  );
-  if (format.exitCode != 0) {
-    stderr.writeln('dart format failed: ${format.stderr}');
-    exit(format.exitCode);
+  // `dart format` with an empty file list exits 64, so the whole step is
+  // skipped when the rename touched no Dart file.
+  if (report.changedDartFiles.isNotEmpty) {
+    final format = formatChangedDart(
+      rootDir: root,
+      files: report.changedDartFiles,
+      dartExecutable: Platform.resolvedExecutable,
+    );
+    if (format.exitCode != 0) {
+      stderr.writeln('dart format failed: ${format.stderr}');
+      _fail(
+        'the rename left unformattable Dart sources',
+        afterDestructive: true,
+      );
+    }
   }
   _run(root, ['pub', 'get'], 'dart pub get');
   _run(
@@ -122,9 +163,75 @@ Never _usage(String message) {
   stderr
     ..writeln(message)
     ..writeln(
-      'usage: dart run tool/init.dart --name NAME --org ORG [--display-name TITLE] [--template-url URL] [--yes] | --print-identity',
+      'usage: dart run tool/init.dart --name NAME --org ORG [--display-name TITLE] [--template-url URL] [--yes] | --print-identity | --print-template-only-paths',
+    )
+    ..writeln(
+      'Run it from the repository root of a git checkout: only tracked files are rewritten.',
     );
   exit(2);
+}
+
+/// Expected failures end as a message plus, after the destructive step, the
+/// documented recovery command - never as a stack trace.
+Never _fail(String message, {required bool afterDestructive}) {
+  stderr.writeln(message);
+  if (afterDestructive) {
+    stderr.writeln('recover with: git checkout -- . && git clean -fd');
+  }
+  exit(1);
+}
+
+T _guarded<T>(T Function() body, {bool afterDestructive = false}) {
+  try {
+    return body();
+  } on InitPostconditionException catch (e) {
+    _fail(e.message, afterDestructive: afterDestructive);
+  } on StateError catch (e) {
+    _fail(e.message, afterDestructive: afterDestructive);
+  } on FormatException catch (e) {
+    // Malformed YAML (yaml's YamlException is a FormatException).
+    _fail('$e', afterDestructive: afterDestructive);
+  } on FileSystemException catch (e) {
+    final path = e.path;
+    _fail(
+      path == null ? e.message : '${e.message}: $path',
+      afterDestructive: afterDestructive,
+    );
+  }
+}
+
+/// `git rev-parse --show-toplevel` is the only thing that can tell a
+/// subdirectory of a checkout from the checkout itself.
+void _requireRepositoryRoot(String root) {
+  final ProcessResult result;
+  try {
+    result = Process.runSync('git', [
+      'rev-parse',
+      '--show-toplevel',
+    ], workingDirectory: root);
+  } on ProcessException {
+    stderr.writeln('init must run inside a git checkout (git not found)');
+    exit(2);
+  }
+  if (result.exitCode != 0) {
+    stderr.writeln('init must run inside a git checkout');
+    exit(2);
+  }
+  final toplevel = (result.stdout as String).trim();
+  if (_resolve(toplevel) != _resolve(root)) {
+    stderr.writeln('run init from the repository root: $toplevel');
+    exit(2);
+  }
+}
+
+/// Compares directories, not strings: /tmp and /private/tmp are the same
+/// directory on macOS.
+String _resolve(String path) {
+  try {
+    return Directory(path).resolveSymbolicLinksSync();
+  } on FileSystemException {
+    return path;
+  }
 }
 
 List<String> _trackedFiles(String root) {

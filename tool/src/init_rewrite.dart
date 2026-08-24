@@ -18,6 +18,10 @@ final class InitReport {
   final deleted = <String>[];
   final movedDirs = <String>[];
   final changedDartFiles = <String>[];
+
+  /// Tracked paths init deliberately left alone: symlinks, whose target may
+  /// live outside the checkout.
+  final skipped = <String>[];
 }
 
 /// Paths init removes (spec section 9 step 6): the init machinery, the
@@ -31,9 +35,11 @@ const templateOnlyPaths = [
   'test/init_identity_test.dart',
   'test/init_validate_test.dart',
   'test/init_rewrite_test.dart',
+  'test/init_cli_test.dart',
   'test/fixtures/init',
   'test/template_identity_test.dart',
   '.github/workflows/template-smoke.yml',
+  'docs/workflow/instantiation.md',
   'docs/superpowers',
 ];
 
@@ -75,7 +81,14 @@ InitReport runInit({
   //    ends with the org is left alone).
   for (final rel in trackedFiles) {
     if (wasDeleted(rel) || _neverRewrite(rel)) continue;
-    final file = File(p.join(rootDir, rel));
+    final path = p.join(rootDir, rel);
+    // A symlink's target may live outside the checkout: following it would
+    // rewrite a file init was never asked to touch.
+    if (FileSystemEntity.isLinkSync(path)) {
+      report.skipped.add(rel);
+      continue;
+    }
+    final file = File(path);
     if (!file.existsSync()) continue;
     final bytes = file.readAsBytesSync();
     if (bytes.take(1024).contains(0)) continue; // binary
@@ -105,6 +118,7 @@ InitReport runInit({
   _rewriteDescriptions(rootDir, to, report);
 
   // 4. Package directories follow the Android package.
+  final movedTargets = <String>[];
   for (final base in [
     'app/android/app/src/main/kotlin',
     'app/android/app/src/androidTest/java',
@@ -115,6 +129,7 @@ InitReport runInit({
       continue;
     }
     Directory(newDir).createSync(recursive: true);
+    movedTargets.add(newDir);
     for (final entity in Directory(oldDir).listSync()) {
       entity.renameSync(p.join(newDir, p.basename(entity.path)));
     }
@@ -134,10 +149,7 @@ InitReport runInit({
   //    that still exists (binaries included - decoded tolerantly), except
   //    the ADRs that record the placeholder on purpose.
   final survivors = <String>[];
-  for (final rel in trackedFiles) {
-    if (wasDeleted(rel) || _neverRewrite(rel)) continue;
-    final file = File(p.join(rootDir, rel));
-    if (!file.existsSync()) continue;
+  void scan(String rel, File file) {
     final text = utf8.decode(file.readAsBytesSync(), allowMalformed: true);
     for (final token in [
       from.bundleId,
@@ -149,6 +161,26 @@ InitReport runInit({
       if (text.contains(token)) {
         survivors.add('$rel: $token');
       }
+    }
+  }
+
+  for (final rel in trackedFiles) {
+    if (wasDeleted(rel) || _neverRewrite(rel)) continue;
+    final path = p.join(rootDir, rel);
+    if (FileSystemEntity.isLinkSync(path)) continue;
+    final file = File(path);
+    if (!file.existsSync()) continue;
+    scan(rel, file);
+  }
+  // The moved Kotlin/androidTest targets are new, untracked paths: without
+  // this pass a token surviving a move would never be scanned.
+  for (final dir in movedTargets) {
+    if (!Directory(dir).existsSync()) continue;
+    for (final entity in Directory(
+      dir,
+    ).listSync(recursive: true, followLinks: false)) {
+      if (entity is! File) continue;
+      scan(p.relative(entity.path, from: rootDir), entity);
     }
   }
   if (survivors.isNotEmpty) {
@@ -193,6 +225,11 @@ void _rewriteDescriptions(String rootDir, InitTarget to, InitReport report) {
     'app/pubspec.yaml',
     RegExp(r'^description: .*$', multiLine: true),
     'description: $description',
+  );
+  edit(
+    'pubspec.yaml',
+    RegExp(r'^description: .*$', multiLine: true),
+    'description: ${to.displayName} workspace root.',
   );
   // patrol's ios.bundle_id must equal the iOS PRODUCT_BUNDLE_IDENTIFIER
   // (camelCase); the generic pass wrote the snake id because app/pubspec.yaml

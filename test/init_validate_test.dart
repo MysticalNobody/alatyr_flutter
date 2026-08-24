@@ -118,4 +118,79 @@ void main() {
       );
     },
   );
+
+  test('a name colliding with an existing workspace member is rejected', () {
+    const members = ['app_core', 'feature_settings', 'alatyr_starter'];
+    for (final bad in members) {
+      expect(
+        () => validateTarget(
+          name: bad,
+          org: 'com.example',
+          workspaceMembers: members,
+        ),
+        throwsA(
+          predicate(
+            (e) => e.toString().contains('already a package in this workspace'),
+          ),
+        ),
+        reason: bad,
+      );
+    }
+    expect(
+      validateTarget(
+        name: 'my_app',
+        org: 'com.example',
+        workspaceMembers: members,
+      ).name,
+      'my_app',
+    );
+  });
+
+  test(
+    'Windows reserved device names are rejected as the name and as an org segment',
+    () {
+      for (final bad in ['con', 'prn', 'aux', 'nul', 'com1', 'lpt9']) {
+        expect(
+          () => validateTarget(name: bad, org: 'com.example'),
+          throwsA(predicate((e) => e.toString().contains('Windows reserved'))),
+          reason: bad,
+        );
+        expect(
+          () => validateTarget(name: 'my_app', org: 'com.$bad'),
+          throwsA(predicate((e) => e.toString().contains('Windows reserved'))),
+          reason: 'com.$bad',
+        );
+      }
+      // com10/lpt0 are not reserved.
+      expect(validateTarget(name: 'com10', org: 'com.example').name, 'com10');
+    },
+  );
+
+  test(
+    '--template-url must be a http(s) URL that survives a markdown link',
+    () {
+      for (final bad in [
+        '',
+        'not a url',
+        'ftp://example.invalid/t',
+        'https://example.invalid/a(b)',
+        'https://example.invalid/a<b>',
+        'https://example.invalid/a b',
+      ]) {
+        expect(
+          () => validateTemplateUrl(bad),
+          throwsA(isA<InitArgumentException>()),
+          reason: '"$bad"',
+        );
+      }
+      expect(
+        () => validateTemplateUrl('https://example.invalid/alatyr.git'),
+        returnsNormally,
+      );
+      expect(
+        () => validateTemplateUrl('http://example.invalid/t?ref=a&b=c'),
+        returnsNormally,
+      );
+    },
+  );
 }

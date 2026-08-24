@@ -152,15 +152,9 @@ void main() {
   test(
     'template machinery is deleted and README stubs written; ADRs and binaries are untouched',
     () {
-      for (final gone in [
-        'tool/init.dart',
-        'tool/src/init_identity.dart',
-        'tool/src/init_rewrite.dart',
-        'tool/template_smoke.sh',
-        '.github/workflows/template-smoke.yml',
-        'docs/superpowers',
-        'test/template_identity_test.dart',
-      ]) {
+      // EVERY entry, not a hand-picked subset: an entry added to the list
+      // without a fixture (or dropped from it) must not pass silently.
+      for (final gone in templateOnlyPaths) {
         expect(exists(gone), isFalse, reason: gone);
       }
       expect(
@@ -185,6 +179,33 @@ void main() {
         contains(0),
       );
       expect(read('AGENTS.md'), isNot(contains('my_app')));
+    },
+  );
+
+  /// A private copy of the fixture tree for a test that mutates it.
+  String freshTree(String prefix) {
+    final dir = Directory.systemTemp.createTempSync(prefix);
+    addTearDown(() => dir.deleteSync(recursive: true));
+    _copyTree(p.join('test', 'fixtures', 'init', 'template'), dir.path);
+    return dir.path;
+  }
+
+  List<String> fixtureTracked() => File(
+    p.join('test', 'fixtures', 'init', 'tracked_files.txt'),
+  ).readAsLinesSync().where((l) => l.isNotEmpty).toList();
+
+  test(
+    'every template-only path exists in this repository (renames are caught here)',
+    () {
+      for (final rel in templateOnlyPaths) {
+        expect(
+          File(rel).existsSync() || Directory(rel).existsSync(),
+          isTrue,
+          reason:
+              '$rel is on templateOnlyPaths but not in the repository: '
+              'init would delete nothing and the path would ship to consumers',
+        );
+      }
     },
   );
 
@@ -268,6 +289,170 @@ void main() {
       throwsA(isA<InitPostconditionException>()),
     );
   });
+
+  test('the root pubspec description becomes the product workspace line', () {
+    expect(
+      read('pubspec.yaml'),
+      contains('description: My App workspace root.'),
+    );
+    expect(read('pubspec.yaml'), isNot(contains('Flutter starter')));
+  });
+
+  test('a pre-existing DEVELOPMENT_TEAM line survives the rewrite untouched', () {
+    // Plausible after opening the template in Xcode once: init rewrites
+    // identity tokens, it does not scrub the project file.
+    final dir = freshTree('init_team');
+    final pbxproj = File(
+      p.join(dir, 'app/ios/Runner.xcodeproj/project.pbxproj'),
+    );
+    pbxproj.writeAsStringSync(
+      pbxproj.readAsStringSync().replaceFirst(
+        'PRODUCT_BUNDLE_IDENTIFIER = dev.alatyr.starter;',
+        'DEVELOPMENT_TEAM = ABCDE12345;\n\t\t\t\tPRODUCT_BUNDLE_IDENTIFIER = dev.alatyr.starter;',
+      ),
+    );
+    runInit(
+      rootDir: dir,
+      from: deriveIdentity(dir),
+      to: validateTarget(name: 'my_app', org: 'com.example'),
+      trackedFiles: fixtureTracked(),
+    );
+    expect(
+      pbxproj.readAsStringSync(),
+      allOf(
+        contains('DEVELOPMENT_TEAM = ABCDE12345;'),
+        contains('PRODUCT_BUNDLE_IDENTIFIER = com.example.myApp;'),
+      ),
+    );
+  });
+
+  test('a CRLF file is rewritten with its line endings preserved', () {
+    final dir = freshTree('init_crlf');
+    const rel = 'app/windows/runner/crlf.rc';
+    File(p.join(dir, rel)).writeAsStringSync(
+      'PRODUCT "Alatyr Starter"\r\nID "dev.alatyr.starter"\r\n',
+    );
+    runInit(
+      rootDir: dir,
+      from: deriveIdentity(dir),
+      to: validateTarget(name: 'my_app', org: 'com.example'),
+      trackedFiles: [...fixtureTracked(), rel],
+    );
+    expect(
+      File(p.join(dir, rel)).readAsStringSync(),
+      'PRODUCT "My App"\r\nID "com.example.my_app"\r\n',
+    );
+  });
+
+  test('a symlinked tracked path is skipped, not followed', () {
+    final dir = freshTree('init_link');
+    final outside = Directory.systemTemp.createTempSync('init_outside');
+    addTearDown(() => outside.deleteSync(recursive: true));
+    final target = File(p.join(outside.path, 'target.md'))
+      ..writeAsStringSync('# Alatyr Starter lives in dev.alatyr.starter\n');
+    const rel = 'docs/architecture/linked.md';
+    Link(p.join(dir, rel)).createSync(target.path);
+    final r = runInit(
+      rootDir: dir,
+      from: deriveIdentity(dir),
+      to: validateTarget(name: 'my_app', org: 'com.example'),
+      trackedFiles: [...fixtureTracked(), rel],
+    );
+    expect(r.skipped, contains(rel));
+    expect(r.rewritten, isNot(contains(rel)));
+    // The link's target lives outside the checkout: untouched, and not a
+    // postcondition survivor either (the scan skips links too).
+    expect(
+      target.readAsStringSync(),
+      '# Alatyr Starter lives in dev.alatyr.starter\n',
+    );
+  });
+
+  test('a token surviving the Kotlin move is a postcondition failure', () {
+    final dir = freshTree('init_moved');
+    // Untracked (so the rewrite pass never sees it), but the move carries it
+    // into the new package directory: only the moved-target scan can catch it.
+    File(
+      p.join(
+        dir,
+        'app/android/app/src/main/kotlin/dev/alatyr/starter/Extra.kt',
+      ),
+    ).writeAsStringSync('package dev.alatyr.starter\n');
+    expect(
+      () => runInit(
+        rootDir: dir,
+        from: deriveIdentity(dir),
+        to: validateTarget(name: 'my_app', org: 'com.example'),
+        trackedFiles: fixtureTracked(),
+      ),
+      throwsA(
+        isA<InitPostconditionException>().having(
+          (e) => e.message,
+          'message',
+          contains('Extra.kt'),
+        ),
+      ),
+    );
+  });
+
+  test('formatChangedDart reports a Dart file it cannot parse', () {
+    final dir = freshTree('init_format_fail');
+    const rel = 'app/lib/broken.dart';
+    File(p.join(dir, rel)).writeAsStringSync('void main( {\n');
+    final result = formatChangedDart(
+      rootDir: dir,
+      files: [rel],
+      dartExecutable: Platform.resolvedExecutable,
+    );
+    expect(result.exitCode, isNot(0));
+    expect('${result.stderr}', contains(rel));
+  });
+
+  test(
+    'untracked files (e.g. the .ru.md doc twins) keep the placeholder tokens',
+    () {},
+    skip:
+        'deliberate: only tracked files are rewritten - git ls-files defines '
+        'the scope, and the CLI usage text says so. Widening it to untracked '
+        'files would rewrite build output and local scratch files.',
+  );
+
+  test(
+    'a dirty tree is rewritten from the working copy, not from the index',
+    () {},
+    skip:
+        'deliberate: runInit only ever reads the working copy '
+        '(File.readAsBytesSync), so there is no index path to diverge from; a '
+        'test would assert the absence of code that was never written.',
+  );
+
+  test(
+    'an unreadable tracked file aborts after the destructive step',
+    () {},
+    skip:
+        'deliberate: chmod 000 does not deny root (CI runs as root), so the '
+        'scenario is not reproducible on every gate host. The CLI now prints '
+        'the FileSystemException message plus the documented recovery command '
+        'instead of a stack trace (tool/init.dart _guarded).',
+  );
+
+  test(
+    'a token inside a base64 blob is rewritten without awareness of the encoding',
+    () {},
+    skip:
+        'deliberate: whole-token text substitution is the documented '
+        'mechanism (ADR-0006); detecting encoded regions would need a decoder '
+        'per format. The postcondition scan still catches a surviving token.',
+  );
+
+  test(
+    'running runInit twice against an already instantiated tree',
+    () {},
+    skip:
+        'deliberate: the CLI deletes itself in step 1, so a rerun is '
+        'structurally impossible; post-init identity changes are a manual '
+        'operation (spec section 9, deliberate YAGNI).',
+  );
 }
 
 /// Materialises the fixture tree, dropping the `.txt` suffix every fixture

@@ -151,17 +151,57 @@ const _javaKeywords = {
   'false',
   'null',
 };
+// Windows refuses these as file or directory names, and the name plus every
+// org segment becomes an Android package directory.
+const _windowsReserved = {
+  'con',
+  'prn',
+  'aux',
+  'nul',
+  'com1',
+  'com2',
+  'com3',
+  'com4',
+  'com5',
+  'com6',
+  'com7',
+  'com8',
+  'com9',
+  'lpt1',
+  'lpt2',
+  'lpt3',
+  'lpt4',
+  'lpt5',
+  'lpt6',
+  'lpt7',
+  'lpt8',
+  'lpt9',
+};
 final _name = RegExp(r'^[a-z][a-z0-9_]*$');
 // No underscores: the org goes verbatim into Apple bundle identifiers.
 final _orgSegment = RegExp(r'^[a-z][a-z0-9]*$');
 // The display name lands in Dart strings, XML, JSON, YAML, C++ and a Windows
 // resource script without escaping: letters, digits, spaces, dots, hyphens.
 final _displayName = RegExp(r'^[A-Za-z0-9][A-Za-z0-9 .-]*$');
+// The URL lands inside a markdown link in the generated README: no spaces,
+// no parentheses or angle brackets that would break the link syntax.
+final _templateUrl = RegExp(r'^https?://[^\s()<>]+$');
+
+/// Validates `--template-url`. Empty or malformed is an argument error, not
+/// a dead link in the generated README.
+void validateTemplateUrl(String url) {
+  if (!_templateUrl.hasMatch(url)) {
+    throw InitArgumentException(
+      '--template-url "$url" must be a http(s) URL without spaces, parentheses or angle brackets',
+    );
+  }
+}
 
 InitTarget validateTarget({
   required String name,
   required String org,
   String? displayName,
+  List<String> workspaceMembers = const [],
 }) {
   if (!_name.hasMatch(name)) {
     throw InitArgumentException(
@@ -174,6 +214,11 @@ InitTarget validateTarget({
   if (_flutterReserved.contains(name)) {
     throw InitArgumentException('--name "$name" shadows a Flutter SDK package');
   }
+  if (workspaceMembers.contains(name)) {
+    throw InitArgumentException(
+      '--name "$name" is already a package in this workspace (${workspaceMembers.join(', ')})',
+    );
+  }
   final segments = org.split('.');
   if (segments.length < 2 || !segments.every(_orgSegment.hasMatch)) {
     throw InitArgumentException(
@@ -184,6 +229,11 @@ InitTarget validateTarget({
     if (_javaKeywords.contains(segment)) {
       throw InitArgumentException(
         "'$segment' is a Java keyword and cannot be an Android package segment",
+      );
+    }
+    if (_windowsReserved.contains(segment)) {
+      throw InitArgumentException(
+        "'$segment' is a Windows reserved device name and cannot be a package directory",
       );
     }
   }
