@@ -1,7 +1,7 @@
 ---
 name: cross-review
 description: Run the Codex cross-review of this branch (Definition of Done item 4) and evaluate its findings - use after the gate is green and before declaring a task done, or when asked to "cross-review", "run codex review", "get the review verdict".
-argument-hint: "[--base <ref>] [--structured]"
+argument-hint: "--base <saved-task-start-sha> [--structured]"
 allowed-tools: Bash(.claude/skills/cross-review/codex_review.sh:*), Bash(git:*), Read
 ---
 
@@ -13,11 +13,18 @@ Codex gives input; you evaluate every point against the code.
 ## 1. Run it
 
 ```bash
-.claude/skills/cross-review/codex_review.sh --base main
+.claude/skills/cross-review/codex_review.sh --base <saved-task-start-sha>
 ```
 
-If the user passed arguments (`$ARGUMENTS`, e.g. `--base develop --structured`),
-use them instead of `--base main`.
+Use the task-start SHA recorded before edits (AGENTS.md), or an explicit
+review base supplied by the user in `$ARGUMENTS`. Never guess `HEAD~1` or
+silently use the runner's legacy `main` default for a task. If the saved
+base is unavailable, recover it from the task record or ask for the scope.
+
+This skill is for **Claude implementation -> Codex review**. When Codex
+implements, use `.agents/skills/cross-review/SKILL.md`, which runs Claude
+through `tool/claude_review.sh` instead. Do not ask the implementing model
+to act as its own cross-reviewer.
 
 **Commit first:** the script diffs committed HEAD against the base and
 refuses a dirty tree (uncommitted or untracked files) with exit 3 - commit
@@ -33,10 +40,11 @@ timeout of 600000 ms; never background it.
 
 **Exit 3 = review not performed** - two kinds, handled differently:
 
-- **Recoverable:** "uncommitted changes in the working tree". Commit the
-  work, then run the script again. This is not a waiver case.
+- **Recoverable:** a dirty tree, missing/invalid base ref, or empty diff.
+  Commit the work or correct the scope using the saved task-start SHA,
+  then re-run. These are not waiver cases.
 - **Honest failure:** codex not installed, not logged in, the pinned model
-  rejected, base ref missing, no changes vs the base. Stop, quote the
+  rejected. Stop, quote the
   script's stderr reason verbatim in your report under Remaining risks,
   and never invent findings. The human waives DoD 4 explicitly - you do
   not.

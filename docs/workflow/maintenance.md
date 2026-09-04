@@ -101,6 +101,23 @@ Hooks and path-scoped rules (`.claude/settings.json`, `.claude/rules/`)
 were verified against Claude Code `2.1.x`. Re-check hook payload shapes
 and rule-loading behavior (`paths:` frontmatter) after a major bump.
 
+The reverse cross-review runner is `tool/claude_review.sh`, invoked by
+Codex's `.agents/skills/cross-review/SKILL.md`. Its reviewer model is
+configured in `.claude/review-model`: the default `sonnet` is a moving
+alias, not an immutable version pin. Update that file to change the
+reviewer model; if the account cannot access it, report the failure and
+obtain an explicit human DoD-4 waiver if it cannot be resolved.
+
+After a Claude CLI update, re-check the
+[official CLI reference](https://code.claude.com/docs/en/cli-reference)
+and run the review-runner fixtures. Verify Read/Grep/Glob-only tool
+selection, `dontAsk`, disabled skills/MCP/hooks, no session persistence,
+and JSON output/schema flags. These restrict CLI tools; they do not
+provide an OS sandbox. The runner requires Node >= 20 to validate Claude's
+JSON envelope and normalize `structured_output` against the shared
+`.codex/review-schema.json`; verify both text and structured output with
+an authenticated smoke review of a committed, non-empty task diff.
+
 ## Agent-hook payloads
 
 The generated-file guard deliberately stays dependency-free. For Claude it
@@ -151,8 +168,8 @@ committing.
 
 ## Running an upgrade
 
-1. Bump the pin (Flutter, a package constraint, the Codex model, or a CLI
-   version).
+1. Update the version or model setting (Flutter, a package constraint,
+   the Codex or Claude reviewer model, or a CLI version).
 2. `fvm flutter pub get`.
 3. `tool/checks.sh` (full gate).
 4. `tool/template_smoke.sh` if the bump could shift generated output

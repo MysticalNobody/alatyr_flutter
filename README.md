@@ -15,13 +15,17 @@ coverage all have the same property: a tool checks them, or the review
 rubric names them explicitly — nothing here relies on an agent remembering
 a rule from a prompt.
 
-Two AI agents work this repo in fixed roles: **Claude Code implements**
-(writes the graph diff, the code, every layer of tests, runs the gate),
-and **OpenAI Codex cross-reviews** (a second, independent, read-only pass
-over every diff before it counts as done). A human sits at exactly two
-checkpoints in that loop — approving the dependency-graph diff before
-implementation starts, and performing the behavioral check on UI-affecting
-changes — everything else is tools or agents. The full ritual is in
+Either **Claude Code or OpenAI Codex implements**: writes the graph diff,
+the code, every layer of tests, and runs the gate. **The other agent
+cross-reviews** the committed task diff in an independent, read-only pass
+before it counts as done. Claude discovers `.claude/skills/cross-review/`
+and dispatches Codex; Codex discovers `.agents/skills/cross-review/` and
+dispatches Claude through `tool/claude_review.sh`. Both workflows save the
+starting commit before edits and pass it as `--base` after committing.
+A human approves the dependency-graph diff before implementation starts
+and performs the behavioral check on UI-affecting changes. A human also
+decides any explicit waiver when an external reviewer cannot run.
+The full ritual is in
 [`docs/workflow/feature-workflow.md`](docs/workflow/feature-workflow.md).
 
 The repo you are looking at is not template output rendered by a separate
@@ -73,7 +77,7 @@ alatyr_flutter/
 ├── tool/              # tool/checks.sh — the one quality gate (ADR-0004)
 ├── test/              # fixture tests for the toolchain itself
 ├── docs/              # architecture, ADRs, testing, workflow, reference
-└── .claude/ .codex/   # hooks, rules, skills, review config for both agents
+└── .claude/ .codex/ .agents/ # hooks, rules, skills, review config for both agents
 ```
 
 ## Documentation
@@ -81,7 +85,7 @@ alatyr_flutter/
 - [`docs/README.md`](docs/README.md) — the full documentation index:
   architecture, ADRs, testing strategy, workflow, reference.
 - [`docs/workflow/maintenance.md`](docs/workflow/maintenance.md) — pin
-  update cadence (Flutter, the codegen ceiling, patrol, the Codex model)
+  update cadence (Flutter, the codegen ceiling, patrol, reviewer models)
   and the upgrade checklist. Survives instantiation.
 
 ## License

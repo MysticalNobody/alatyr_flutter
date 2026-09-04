@@ -20,8 +20,11 @@ trust steps both agents need.
   (`sdkmanager --install "platforms;android-37"`) — `compileSdk 37` (see
   `docs/workflow/maintenance.md`) needs it to build the app at all, apart
   from whatever emulator image `tool/e2e.sh` provisions.
-- **Node**, for the agent CLIs (`npm i -g @openai/codex`; Claude Code
-  itself) and the web runtime smoke (`tool/web_smoke.sh`, Node >= 20).
+- **Node >= 20**, for the Codex CLI (`npm i -g @openai/codex`), the
+  Claude review runner's JSON validation, and `tool/web_smoke.sh`.
+- **Claude Code and Codex CLIs**, installed and authenticated for the
+  chosen implementation/review pair. Either can implement; the other
+  must be available to cross-review.
 
 <!-- template-only:begin -->
 ## Instantiation
@@ -105,6 +108,12 @@ Start the `claude` session **at the repository root** — project settings
 so a session started inside `app/` has neither the codegen-guard hook nor
 the deny rule. On first use, Claude Code asks you to accept workspace
 trust — hooks fire only after that. Run `/hooks` to see what's wired.
+Sign in once through `claude` before using it as the external reviewer.
+`tool/claude_review.sh` reads the reviewer model from
+`.claude/review-model` (`sonnet` by default, a moving alias rather than an
+immutable model pin). Reviewer sessions deliberately disable hooks,
+skills and MCP servers and allow only Read/Grep/Glob; they do not replace
+the trusted implementation session's hooks.
 
 ### Codex
 
@@ -118,6 +127,29 @@ codegen-freshness gate stage is the only thing still protecting generated
 files from hand edits by Codex. Log in once with `codex login`; the
 review model is pinned in `.codex/config.toml` (`review_model`) —
 `docs/workflow/maintenance.md` owns updating it if Codex ever rejects it.
+
+## Choose the implementer
+
+At task start, use a task branch/worktree and record `git rev-parse HEAD`
+in the task plan or conversation. Keep that SHA through every commit and
+review fix. After the gate is green and the tree is committed and clean:
+
+- **Claude implements → Codex reviews:** invoke `/cross-review --base
+  <saved-task-start-sha>` in Claude Code, or run
+  `.claude/skills/cross-review/codex_review.sh --base <saved-task-start-sha>`.
+- **Codex implements → Claude reviews:** use Codex's repository skill
+  `.agents/skills/cross-review/SKILL.md`, or run
+  `tool/claude_review.sh --base <saved-task-start-sha>`.
+
+Either runner supports `--structured` for the shared review schema and
+`--out <dir>` for the result location. Both skills require the saved task
+base. The Claude runner also requires `--base`; the legacy Codex runner
+retains its `main` default for compatibility, so always pass the saved
+SHA explicitly. Missing/invalid scope or an empty diff must be corrected,
+and a dirty tree must be committed before retrying. These are not waiver
+cases. The
+[feature workflow](feature-workflow.md) covers findings, outputs, and
+explicit human waivers for external CLI/authentication/model failures.
 
 ## Troubleshooting
 

@@ -63,9 +63,16 @@ constructs implementations (`app/lib/bootstrap/`) and assembles the router.
 
 ## 5. The graph-first feature ritual
 
+Either Claude Code or Codex implements; the other agent cross-reviews.
+Before edits, use a task branch/worktree and record `git rev-parse HEAD`
+in the task plan or conversation. Pass that saved SHA as `--base` to
+cross-review; never guess `HEAD~1` for a multi-commit task. Both reviewers
+require a clean tree and review committed changes. Missing, invalid, or
+empty scopes and dirty trees are recoverable errors, not waiver cases.
+
 1. Propose the package shape by editing `package_graph.yaml`; draft the
    plan. 2. Optional, recommended for non-trivial work: challenge the plan
-   with a fresh read-only Codex pass (`docs/workflow/feature-workflow.md`).
+   with a fresh read-only pass (`docs/workflow/feature-workflow.md`).
 3. A human approves the graph diff. 4. Implement in order: `*_api` →
 impl → wiring in `app/`. 5. Tools enforce continuously; the gate, the
 adversarial pass, cross-review and the behavioral check close the loop.
@@ -78,8 +85,9 @@ adversarial pass, cross-review and the behavioral check close the loop.
 3. `tool/e2e.sh` is green when critical flows are touched.
 4. Cross-review completed; no open P0/P1 finding — each is fixed or
    rebutted with recorded reasoning. If review is honestly impossible
-   (`codex` absent, model rejected), the human waives this item explicitly
-   and the waiver is recorded; the agent never waives it.
+   (reviewer CLI absent, authentication or model failure), the human
+   waives this item explicitly and the waiver is recorded; the agent
+   never waives it.
 5. Human behavioral check for UI-affecting changes.
 
 Every completion report ends with a **Remaining risks** section —
@@ -98,6 +106,10 @@ and never silently skipped.
 
 `tool/checks.sh --fast` (format → graph → imports; the inner loop) ·
 `tool/checks.sh` (full gate) · `tool/checks.sh --package <dir>` ·
+`.claude/skills/cross-review/codex_review.sh --base <saved-sha>`
+(Claude implements → Codex reviews) ·
+`tool/claude_review.sh --base <saved-sha>` (Codex implements → Claude
+reviews; `.agents/skills/cross-review/SKILL.md`) ·
 `tool/codegen.sh [--cold]` · `tool/e2e.sh` (patrol e2e; device spec in
 `tool/e2e.yaml`). `fvm dart run tool/init.dart --name … --org …` is
 template-repo only: it renames the placeholder identity, then deletes
