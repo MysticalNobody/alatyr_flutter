@@ -27,6 +27,10 @@ instructions (read-only, ephemeral, "act as a reviewer") live only in the
 skill and per-call flags, never in `AGENTS.md`, which Codex also reads for
 ordinary implementation tasks.
 
+The caller records the pre-task commit SHA before editing and passes it
+as the required `--base`. Invalid or empty review scopes are recoverable
+usage errors (exit 2), never grounds for a review waiver.
+
 ## Consequences
 
 The same rubric drives local CLI review, headless `codex exec` review, and

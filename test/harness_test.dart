@@ -261,7 +261,7 @@ void main() {
     late String repo;
     late Map<String, String> env;
 
-    void git(List<String> args) {
+    String git(List<String> args) {
       final r = Process.runSync(
         'git',
         args,
@@ -269,23 +269,40 @@ void main() {
         environment: env,
       );
       expect(r.exitCode, 0, reason: '${args.join(' ')}: ${r.stderr}');
+      return (r.stdout as String).trim();
     }
 
-    ProcessResult run(String base) => Process.runSync(
+    ProcessResult runArgs(
+      List<String> args, {
+      Map<String, String> overrides = const {},
+    }) => Process.runSync(
       'bash',
-      [script, '--base', base, '--out', '${tmp.path}/out'],
+      [script, ...args, '--out', '${tmp.path}/out'],
       workingDirectory: repo,
-      environment: env,
+      environment: {...env, ...overrides},
     );
+
+    ProcessResult run(String base) => runArgs(['--base', base]);
+
+    List<String> reviewerArgs() => File('${tmp.path}/args').readAsLinesSync();
 
     setUp(() {
       tmp = Directory.systemTemp.createTempSync('codex_review');
       repo = '${tmp.path}/repo';
       final bin = Directory('${tmp.path}/bin')..createSync(recursive: true);
-      // Stub codex: `login status` succeeds, `exec ... -o FILE` writes FILE.
+      // Record arguments and stdin so successful tests prove the reviewed
+      // range, not just that an output file happened to be written.
       File('${bin.path}/codex').writeAsStringSync(
         '#!/usr/bin/env bash\n'
-        r'[[ "$1" == "login" ]] && exit 0'
+        r'printf "%s\n" "$@" >> "$STUB_ARGS"'
+        '\n'
+        r'if [[ "$1" == "login" ]]; then'
+        '\n'
+        r'  [[ -z "${STUB_MOVE_REF:-}" ]] || git update-ref "$STUB_MOVE_REF" HEAD'
+        '\n'
+        r'  exit "${STUB_LOGIN_EXIT:-0}"; fi'
+        '\n'
+        r'cat > "$STUB_STDIN"'
         '\n'
         r'while [[ $# -gt 0 ]]; do'
         r' [[ "$1" == "-o" ]] && { echo stub > "$2"; exit 0; }; shift; done'
@@ -301,13 +318,15 @@ void main() {
         'GIT_CONFIG_GLOBAL': '/dev/null',
         'GIT_CONFIG_SYSTEM': '/dev/null',
         'GIT_CONFIG_NOSYSTEM': '1',
+        'STUB_ARGS': '${tmp.path}/args',
+        'STUB_STDIN': '${tmp.path}/stdin',
       };
       Directory('$repo/.codex').createSync(recursive: true);
       File(
         '$repo/.codex/config.toml',
       ).writeAsStringSync('review_model = "stub-model"\n');
       File('$repo/a.txt').writeAsStringSync('base\n');
-      git(['init', '-q']);
+      git(['init', '-q', '-b', 'main']);
       git(['add', '-A']);
       git(['commit', '-qm', 'base']);
       git(['branch', 'base-ref']);
@@ -322,6 +341,8 @@ void main() {
       final r = run('base-ref');
       expect(r.exitCode, 0, reason: '${r.stderr}');
       expect(File((r.stdout as String).trim()).existsSync(), isTrue);
+      final args = reviewerArgs();
+      expect(args[args.indexOf('--base') + 1], git(['rev-parse', 'base-ref']));
     });
 
     test('modified tracked file: exit 3, uncommitted', () {
@@ -338,11 +359,153 @@ void main() {
       expect(r.stderr, contains('uncommitted'));
     });
 
-    test('missing base ref: exit 3, does not exist', () {
+    test('missing base ref: exit 2 before reviewer login', () {
       final r = run('no-such-ref');
-      expect(r.exitCode, 3);
-      expect(r.stderr, contains('does not exist'));
+      expect(r.exitCode, 2);
+      expect(r.stderr, contains('does not resolve to a commit'));
+      expect(File('${tmp.path}/args').existsSync(), isFalse);
     });
+
+    for (final args in <List<String>>[
+      [],
+      ['--base'],
+      ['--base', '--structured'],
+      ['--base', ''],
+    ]) {
+      test('missing base argument $args: exit 2 without reviewer', () {
+        final r = runArgs(args);
+        expect(r.exitCode, 2, reason: '${r.stderr}');
+        expect(r.stderr, contains('usage:'));
+        expect(File('${tmp.path}/args').existsSync(), isFalse);
+      });
+    }
+
+    for (final base in ['HEAD:a.txt', 'HEAD^{tree}']) {
+      test('non-commit base $base: exit 2 without reviewer', () {
+        final r = run(base);
+        expect(r.exitCode, 2);
+        expect(r.stderr, contains('does not resolve to a commit'));
+        expect(File('${tmp.path}/args').existsSync(), isFalse);
+      });
+    }
+
+    test('main at HEAD: scope error, not a reviewer failure', () {
+      final r = runArgs(
+        ['--base', 'main'],
+        overrides: {'STUB_LOGIN_EXIT': '1'},
+      );
+      expect(r.exitCode, 2);
+      expect(r.stderr, contains('no changes'));
+      expect(r.stderr, contains('not a review waiver'));
+      expect(File('${tmp.path}/args').existsSync(), isFalse);
+    });
+
+    test('unrelated commit: exit 2 without reviewer', () {
+      final tree = git(['rev-parse', 'HEAD^{tree}']);
+      final unrelated = git(['commit-tree', tree, '-m', 'unrelated root']);
+      final r = run(unrelated);
+      expect(r.exitCode, 2);
+      expect(r.stderr, contains('no common ancestor'));
+      expect(File('${tmp.path}/args').existsSync(), isFalse);
+    });
+
+    test('base ahead of HEAD: exit 2 without reviewer', () {
+      final tree = git(['rev-parse', 'HEAD^{tree}']);
+      final future = git(['commit-tree', tree, '-p', 'HEAD', '-m', 'future']);
+      final r = run(future);
+      expect(r.exitCode, 2);
+      expect(r.stderr, contains('no changes'));
+      expect(File('${tmp.path}/args').existsSync(), isFalse);
+    });
+
+    test('fully reverted task: empty net diff is not reviewed', () {
+      git(['revert', '--no-edit', 'HEAD']);
+      final r = run('base-ref');
+      expect(r.exitCode, 2);
+      expect(r.stderr, contains('no changes'));
+      expect(File('${tmp.path}/args').existsSync(), isFalse);
+    });
+
+    test('annotated commit tag resolves to the saved SHA', () {
+      git(['tag', '-a', 'task-start', 'base-ref', '-m', 'task start']);
+      final r = run('task-start');
+      expect(r.exitCode, 0, reason: '${r.stderr}');
+      final args = reviewerArgs();
+      expect(args[args.indexOf('--base') + 1], git(['rev-parse', 'base-ref']));
+    });
+
+    for (final structured in [false, true]) {
+      test('saved base covers every task commit (structured=$structured)', () {
+        final base = git(['rev-parse', 'base-ref']);
+        File('$repo/c.txt').writeAsStringSync('second task change\n');
+        git(['add', '-A']);
+        git(['commit', '-qm', 'second task change']);
+        final r = runArgs(['--base', base, if (structured) '--structured']);
+        expect(r.exitCode, 0, reason: '${r.stderr}');
+        if (structured) {
+          final diff = File('${tmp.path}/stdin').readAsStringSync();
+          expect(diff, contains('diff --git a/b.txt b/b.txt'));
+          expect(diff, contains('diff --git a/c.txt b/c.txt'));
+          expect(reviewerArgs().last, contains('against $base'));
+        } else {
+          final args = reviewerArgs();
+          expect(args[args.indexOf('--base') + 1], base);
+        }
+      });
+    }
+
+    for (final structured in [false, true]) {
+      test('diverged base uses merge-base (structured=$structured)', () {
+        final base = git(['rev-parse', 'base-ref']);
+        final tree = git(['rev-parse', 'base-ref^{tree}']);
+        final side = git(['commit-tree', tree, '-p', base, '-m', 'side']);
+        git(['update-ref', 'refs/heads/side', side]);
+        final r = runArgs(['--base', 'side', if (structured) '--structured']);
+        expect(r.exitCode, 0, reason: '${r.stderr}');
+        final args = reviewerArgs();
+        if (structured) {
+          expect(args.last, contains('against $base'));
+          expect(
+            File('${tmp.path}/stdin').readAsStringSync(),
+            contains('diff --git a/b.txt b/b.txt'),
+          );
+        } else {
+          expect(args[args.indexOf('--base') + 1], base);
+        }
+      });
+    }
+
+    test('valid scope and unavailable login remain an exit 3 failure', () {
+      final r = runArgs(
+        ['--base', 'base-ref'],
+        overrides: {'STUB_LOGIN_EXIT': '1'},
+      );
+      expect(r.exitCode, 3);
+      expect(r.stderr, contains('not logged in'));
+      expect(reviewerArgs(), ['login', 'status']);
+    });
+
+    for (final structured in [false, true]) {
+      test('moving base ref keeps resolved scope (structured=$structured)', () {
+        final base = git(['rev-parse', 'base-ref']);
+        final r = runArgs(
+          ['--base', 'base-ref', if (structured) '--structured'],
+          overrides: {'STUB_MOVE_REF': 'refs/heads/base-ref'},
+        );
+        expect(r.exitCode, 0, reason: '${r.stderr}');
+        expect(git(['rev-parse', 'base-ref']), git(['rev-parse', 'HEAD']));
+        final args = reviewerArgs();
+        if (structured) {
+          expect(args.last, contains('against $base'));
+          expect(
+            File('${tmp.path}/stdin').readAsStringSync(),
+            contains('diff --git a/b.txt b/b.txt'),
+          );
+        } else {
+          expect(args[args.indexOf('--base') + 1], base);
+        }
+      });
+    }
   });
 
   group('adversarial harness', () {

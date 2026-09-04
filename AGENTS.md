@@ -63,6 +63,11 @@ constructs implementations (`app/lib/bootstrap/`) and assembles the router.
 
 ## 5. The graph-first feature ritual
 
+Before edits, use a task branch/worktree and record `git rev-parse HEAD`
+in the task plan or task conversation. Pass that saved SHA as `--base`
+to cross-review; never guess `HEAD~1` for a multi-commit task. Missing,
+invalid, or empty review scopes are recoverable errors, not waiver cases.
+
 1. Propose the package shape by editing `package_graph.yaml`; draft the
    plan. 2. Optional, recommended for non-trivial work: challenge the plan
    with a fresh read-only Codex pass (`docs/workflow/feature-workflow.md`).
