@@ -190,7 +190,11 @@ void main() {
     expect(args, contains('--no-session-persistence'));
     expect(args, isNot(contains('--dangerously-skip-permissions')));
     expect(flagValue(args, '--output-format'), 'json');
-    expect(jsonDecode(flagValue(args, '--json-schema')), jsonDecode(schema));
+    // Claude's validator rejects the Codex schema's 2020-12 dialect marker.
+    // The CLI must still receive all constraints from the shared schema.
+    final claudeSchema = jsonDecode(schema) as Map<String, dynamic>
+      ..remove(r'$schema');
+    expect(jsonDecode(flagValue(args, '--json-schema')), claudeSchema);
     expect(jsonDecode(flagValue(args, '--mcp-config')), {
       'mcpServers': <String, dynamic>{},
     });

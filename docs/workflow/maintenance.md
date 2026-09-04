@@ -117,6 +117,9 @@ provide an OS sandbox. The runner requires Node >= 20 to validate Claude's
 JSON envelope and normalize `structured_output` against the shared
 `.codex/review-schema.json`; verify both text and structured output with
 an authenticated smoke review of a committed, non-empty task diff.
+Claude Code 2.1.235 rejects the shared schema's 2020-12 `$schema` marker;
+the runner omits that metadata for Claude while preserving all constraints
+and using the canonical schema to validate the returned review.
 
 ## Agent-hook payloads
 
