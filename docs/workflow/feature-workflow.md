@@ -4,18 +4,20 @@ The graph-first ritual, step by step, with the exact commands and skills —
 and the roles that make "the agent implements; tools verify; an
 independent AI reviews; the human decides" hold in practice.
 
+## Before the first edit
+
+Use the task's existing branch/worktree, or create a working branch with
+`git switch -c codex/<task-name>`. Run `git rev-parse HEAD` and record the
+printed SHA in the task plan or task conversation as the review base.
+Keep that same SHA through every implementation/fix commit and session
+restart. Set `TASK_BASE` to this saved value when running cross-review;
+do not recompute it after committing or guess `HEAD~1`.
+
+For work already started without a saved base, identify the pre-task
+commit from history and the intended scope. If the scope is uncertain,
+ask the human to clarify it; an incorrect base is not a review waiver.
+
 ## The ritual
-
-Before editing, create or select a task branch/worktree and save the
-starting commit in the task plan or conversation:
-
-```bash
-git rev-parse HEAD
-```
-
-Use that saved SHA as `--base` for every review of this task, including
-after fix commits. Do not substitute `HEAD~1`: it omits earlier commits
-in a multi-commit task. Restore the saved value if a session restarts.
 
 1. **Edit the graph.** Propose the package shape by editing
    `docs/reference/package_graph.yaml` (new packages, kinds,
@@ -59,8 +61,10 @@ in a multi-commit task. Restore the saved value if a session restarts.
    dispatches Codex, and Codex dispatches Claude (Definition of Done
    item 4). Both runners review committed HEAD against the supplied base
    and reject a dirty tree (tracked edits or untracked files). Commit and
-   retry; this is recoverable. Missing/invalid bases and empty diffs also
-   require correcting the scope, never a waiver. If a reviewer CLI,
+   retry; this is recoverable. Missing/invalid bases, no common ancestor,
+   and empty diffs also require correcting the scope, never a waiver. If
+   there are truly no net changes, report that fact instead of selecting
+   an unrelated base. If a reviewer CLI,
    authentication, or model failure prevents review, report the stderr
    reason verbatim under Remaining risks; only the human can explicitly
    waive DoD 4. Evaluate every P0/P1 finding, fix or rebut it with recorded
@@ -93,15 +97,15 @@ DoD 3's "critical flows are touched" and the two smokes, made mechanical
 
 ## Review commands and outputs
 
-Set `CROSS_REVIEW_BASE` to the SHA recorded **before edits**, then run the
+Set `TASK_BASE` to the SHA recorded **before edits**, then run the
 command for your implementer after committing:
 
 ```bash
 # Claude implements; Codex reviews.
-.claude/skills/cross-review/codex_review.sh --base "$CROSS_REVIEW_BASE"
+.claude/skills/cross-review/codex_review.sh --base "$TASK_BASE"
 
 # Codex implements; Claude reviews.
-tool/claude_review.sh --base "$CROSS_REVIEW_BASE"
+tool/claude_review.sh --base "$TASK_BASE"
 ```
 
 Claude's skill is `.claude/skills/cross-review/SKILL.md`; Codex's skill is
@@ -112,8 +116,10 @@ Claude's structured result is extracted and validated from its CLI JSON
 envelope. Default output directories are `.superpowers/cross-review`
 for Codex and `.superpowers/cross-review/claude` for Claude (gitignored).
 Exit 0 means a review was written, not that it approved the diff; read
-the verdict. Exit 2 is an invocation error; exit 3 means review was not
-performed, with the reason on stderr. Fix recoverable input/scope issues.
+the verdict. Exit 2 is an invocation error; Codex also uses it for invalid
+or empty scopes, while Claude reports those with exit 3. Exit 3 means
+review was not performed, with the reason on stderr. Scope errors and
+dirty trees are recoverable in either runner, regardless of exit code.
 
 The Claude runner enables only Read/Grep/Glob, uses `dontAsk`, disables
 skills, MCP servers and hooks, and does not persist the session. These
@@ -149,7 +155,7 @@ session from ending while the cross-review verdict is `request_changes`.
 for an external review, which is too slow for the inner loop this
 template optimizes for. Add it deliberately, per project, if the cost is
 worth it to you. The example below is for a Claude implementation session
-with Codex reviewing. Supply `CROSS_REVIEW_BASE` in that session's
+with Codex reviewing. Supply `TASK_BASE` in that session's
 environment using the saved starting SHA; there is no implicit branch
 default:
 
@@ -184,17 +190,21 @@ payload="$(cat)"
 # then, or the hook fires forever.
 printf '%s' "$payload" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*true' && exit 0
 
-# Missing scope is recoverable; require the task's saved starting SHA.
-if [[ -z "${CROSS_REVIEW_BASE:-}" ]]; then
-  echo "Set CROSS_REVIEW_BASE to the task's saved starting SHA." >&2
-  exit 2
-fi
-# Other runner failures fail OPEN in this illustrative hook. The stderr
-# reason stays visible; this does not waive DoD 4. The implementer must
-# fix input/scope errors or obtain an explicit human waiver for an
-# external reviewer failure before claiming completion.
-review_file="$(.claude/skills/cross-review/codex_review.sh \
-  --base "$CROSS_REVIEW_BASE" --structured)" || exit 0
+# Fails OPEN by design: a non-zero exit here (exit 3 - codex missing, not
+# logged in, dirty tree) must not trap the session in an unstoppable loop.
+# Swap `exit 0` for `exit 2` + the stderr reason if you want a missing
+# reviewer to block Stop instead.
+# Configure TASK_BASE in this hook's environment from the saved task SHA;
+# never derive it from HEAD at Stop time, after the task was committed.
+[[ -n "${TASK_BASE:-}" ]] || { echo "Set TASK_BASE to the saved pre-task SHA" >&2; exit 2; }
+review_file="$(.claude/skills/cross-review/codex_review.sh --base "$TASK_BASE" --structured)" || {
+  status=$?
+  # Scope/usage errors must be corrected, not treated as reviewer downtime.
+  [[ "$status" -eq 2 ]] && exit 2
+  exit 0
+}
+# Failing open does not waive DoD 4; the caller must resolve the failure
+# or obtain the human's explicit waiver for unavailable external review.
 verdict="$(grep -o '"verdict"[[:space:]]*:[[:space:]]*"[^"]*"' "$review_file" \
   | sed -E 's/.*"([a-z_]+)"$/\1/')"
 

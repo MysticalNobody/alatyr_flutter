@@ -1,12 +1,13 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
 import 'package:test/test.dart';
 
+import 'support/docs_language.dart';
+
 /// The canonical docs set, kept honest by machine: every file
-/// exists, every relative link resolves, and nothing shipped is in
-/// Russian (twins are gitignored).
+/// exists, every relative link resolves, and canonical documentation is
+/// English (local twins are gitignored; application content may be localized).
 const requiredDocs = [
   'docs/README.md',
   'docs/architecture/01-overview.md',
@@ -37,8 +38,6 @@ const requiredDocs = [
 ];
 
 final _link = RegExp(r'\[[^\]]*\]\(([^)\s#]+)(#[^)]*)?\)');
-// Written with escapes on purpose: this file is scanned by its own test.
-final _cyrillic = RegExp(r'[\u0400-\u04FF]');
 final _fencedBlock = RegExp(r'```[\s\S]*?```');
 final _inlineCode = RegExp(r'`[^`\n]*`');
 
@@ -116,32 +115,15 @@ void main() {
     }
   });
 
-  test('no shipped (tracked or untracked) file contains Cyrillic', () {
-    Iterable<String> lsFiles(List<String> args) =>
-        (Process.runSync('git', ['ls-files', ...args]).stdout as String)
-            .split('\u0000')
-            .where((s) => s.isNotEmpty);
-    // Untracked-but-not-ignored files are scanned too: a brand-new file with
-    // Russian text must fail the gate before it is ever committed.
-    // Gitignored paths (the `*.ru.md` twins, CLAUDE.local.md) stay excluded.
-    final candidates = [
-      ...lsFiles(['-z']),
-      ...lsFiles(['--others', '--exclude-standard', '-z']),
-    ];
-    final hits = <String>[];
-    for (final path in candidates) {
-      final file = File(path);
-      if (!file.existsSync()) continue;
-      final bytes = file.readAsBytesSync();
-      // Skip binaries: a NUL byte in the first 1 KB is good enough here.
-      if (bytes.take(1024).contains(0)) continue;
-      final text = utf8.decode(bytes, allowMalformed: true);
-      if (_cyrillic.hasMatch(text)) hits.add(path);
-    }
-    expect(
-      hits,
-      isEmpty,
-      reason: 'Russian text in shipped files:\n${hits.join('\n')}',
-    );
-  });
+  test(
+    'tracked and untracked canonical documentation contains no Cyrillic',
+    () {
+      final hits = findCyrillicDocumentation(Directory.current);
+      expect(
+        hits,
+        isEmpty,
+        reason: 'Cyrillic text in canonical documentation:\n${hits.join('\n')}',
+      );
+    },
+  );
 }

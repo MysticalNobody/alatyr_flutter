@@ -142,10 +142,9 @@ review fix. After the gate is green and the tree is committed and clean:
   `tool/claude_review.sh --base <saved-task-start-sha>`.
 
 Either runner supports `--structured` for the shared review schema and
-`--out <dir>` for the result location. Both skills require the saved task
-base. The Claude runner also requires `--base`; the legacy Codex runner
-retains its `main` default for compatibility, so always pass the saved
-SHA explicitly. Missing/invalid scope or an empty diff must be corrected,
+`--out <dir>` for the result location. Both runners require `--base`;
+always pass the saved task SHA explicitly. Missing/invalid scope, no
+common ancestor, or an empty diff must be corrected,
 and a dirty tree must be committed before retrying. These are not waiver
 cases. The
 [feature workflow](feature-workflow.md) covers findings, outputs, and

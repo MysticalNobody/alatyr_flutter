@@ -35,6 +35,10 @@ Codex's model is configured in `.codex/config.toml`; Claude's model is in
 `.claude/review-model` (default `sonnet`, a moving alias). Both runners
 offer text output and structured output using `.codex/review-schema.json`.
 
+Both runners require `--base`. Codex reports invalid or empty scopes with
+exit 2; Claude uses exit 3. Either requires correcting the scope, never a
+review waiver.
+
 ## Consequences
 
 Teams can choose their implementer while retaining an independent review

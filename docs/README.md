@@ -2,7 +2,13 @@
 
 Machine-checked index: `test/docs_test.dart` asserts that every file listed
 here exists, that every relative link in this tree resolves, and that
-nothing shipped is in Russian.
+canonical documentation contains no Cyrillic. The language check covers
+the root `README.md`, `AGENTS.md`, `CLAUDE.md`, `app/README.md`, and Markdown
+under `docs/` (excluding local Russian twins and `docs/superpowers/`). It
+checks both tracked and new, non-ignored files. Application source,
+localization files, assets, platform display names, and test fixtures may
+use any language; the template's documentation policy does not constrain
+the application after instantiation.
 
 ## Architecture
 

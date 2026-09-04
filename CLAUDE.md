@@ -2,7 +2,7 @@
 
 # Claude Code notes
 
-- **Skills (repo-level, `.claude/skills/`):** `/cross-review [base-ref]`
+- **Skills (repo-level, `.claude/skills/`):** `/cross-review --base <saved-sha>`
   after the gate is green and before declaring a task done (DoD 4);
   `/adversarial-tests <feature_api package dir> [feature impl dir]` after
   the first green implementation of new behaviour (DoD 2). Both read
