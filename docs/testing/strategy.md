@@ -59,17 +59,17 @@ invisible to agents, the gate, and review.
 
 ## The adversarial pass
 
-Every new or changed behavior gets one: the `test-breaker` subagent
-(`.claude/agents/test-breaker.md`), given only the `*_api` contract, the
-feature spec/plan, and the diff — a **fresh context**, uncontaminated by
-the implementer's own reasoning, so it cannot rubber-stamp assumptions the
-implementer already made. It returns break scenarios (boundary values,
+Every new or changed behavior gets one: a fresh, read-only subagent
+given only the `*_api` contract, feature spec/plan, and diff, with no
+implementer reasoning or inherited conversation. Claude dispatches its
+`test-breaker` subagent through `/adversarial-tests`; Codex dispatches a
+collaboration subagent with the same rubric from
+`.claude/agents/test-breaker.md`. It returns break scenarios (boundary values,
 races, lifecycle, process death/restart, dependency failures, corrupted
 stored data) as "action → required behavior → test layer". The
-`/adversarial-tests` skill orchestrates: dispatch test-breaker → cover
-every scenario with a test or a `skip: 'deliberate: …'` stub → report the
-tally. See `docs/workflow/feature-workflow.md` for where this sits in the
-ritual.
+implementer covers every scenario with a test or a `skip: 'deliberate: …'`
+stub and reports the tally. See `docs/workflow/feature-workflow.md` for
+where this sits in the ritual for either implementer.
 
 ## The eight verification layers of a feature
 
@@ -82,7 +82,8 @@ ritual.
    context.
 6. Patrol e2e over registered critical flows — machine, on-device
    (`tool/e2e.sh`).
-7. Codex cross-review of the diff — independent AI.
+7. Cross-review of the committed task diff — Codex reviews Claude's work;
+   Claude reviews Codex's work, against the same `AGENTS.md` rubric.
 8. Human behavioral check (UI changes) — the one human layer, by design.
 
 ## Exemplar map

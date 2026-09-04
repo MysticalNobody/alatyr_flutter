@@ -40,7 +40,7 @@ One page per topic, newest facts first, always true of the current commit:
 - [adr/0004-single-gate.md](adr/0004-single-gate.md) — one `tool/checks.sh`
   on every machine; a future CI runs it verbatim.
 - [adr/0005-cross-review-protocol.md](adr/0005-cross-review-protocol.md) —
-  Codex as an independent reviewer.
+  independent cross-review in either direction: Claude → Codex or Codex → Claude.
 - [adr/0006-working-placeholder-instantiation.md](adr/0006-working-placeholder-instantiation.md)
   — token replacement over a working app, not a template engine.
 
@@ -68,9 +68,9 @@ One page per topic, newest facts first, always true of the current commit:
 - [workflow/feature-workflow.md](workflow/feature-workflow.md) — the
   graph-first ritual step by step, the role table, the completion-report
   shape, and the opt-in Stop-hook review-gate hardening.
-- [workflow/maintenance.md](workflow/maintenance.md) — pin update
-  cadence and checklist (Flutter, the codegen ceiling, patrol, the Codex
-  model). Survives instantiation.
+- [workflow/maintenance.md](workflow/maintenance.md) — update
+  cadence and checklist (Flutter, the codegen ceiling, patrol, reviewer
+  models and CLIs). Survives instantiation.
 - [workflow/modules.md](workflow/modules.md) — optional modules
   (superpowers, spec-kit, beads, marionette) and why nothing is vendored.
 

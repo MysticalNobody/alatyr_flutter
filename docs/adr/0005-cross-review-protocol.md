@@ -1,54 +1,58 @@
 # ADR-0005: Cross-review protocol
 
-**Status:** accepted
+**Status:** accepted (amended 2026-09-04)
 **Date:** 2026-08-13
 
 ## Context
 
 A single agent reviewing its own diff shares its own blind spots. The
-template needs a second, independent reader before work counts as done,
-without turning that reader into a second implementer or a silent gate
-that can be routed around.
+template needs an independent reader before work counts as done, without
+turning that reader into a second implementer or a silent gate that can
+be routed around. Implementers may use either Claude Code or Codex.
 
 ## Decision
 
-Codex acts as an independent AI reviewer through a repo-level skill
-(`.claude/skills/cross-review/`), invoked as part of the Definition of
-Done rather than enforced by a Stop hook. The reviewer runs read-only,
-evaluates the diff against `## Code Review Rules` in `AGENTS.md` (the same
-rubric Codex reads natively and Codex cloud PR review applies), and
-returns a verdict the implementer must **evaluate, not obey**: every
-P0/P1 finding is either fixed or explicitly rebutted with reasoning in the
-task report, and the verdict is quoted, not paraphrased. If review is
-honestly impossible (`codex` absent, the model rejected the call), the
-human explicitly waives the item — the agent never waives it itself. The
-rubric lives in `AGENTS.md` (what findings matter); role/sandbox
-instructions (read-only, ephemeral, "act as a reviewer") live only in the
-skill and per-call flags, never in `AGENTS.md`, which Codex also reads for
-ordinary implementation tasks.
+The implementer dispatches the other agent as reviewer: Claude Code uses
+`.claude/skills/cross-review/codex_review.sh`; Codex discovers
+`.agents/skills/cross-review/SKILL.md` and uses `tool/claude_review.sh`.
+Both workflows pass an explicit `--base` saved from `git rev-parse HEAD`
+before task edits; runners require a clean tree and a non-empty committed
+diff. A dirty tree or missing, invalid, or empty scope is recoverable;
+fix it and retry.
 
-The caller records the pre-task commit SHA before editing and passes it
-as the required `--base`. Invalid or empty review scopes are recoverable
-usage errors (exit 2), never grounds for a review waiver.
+The reviewer evaluates `## Code Review Rules` in `AGENTS.md`. Every P0/P1
+finding is fixed or explicitly rebutted with reasoning in the task report,
+and the verdict is quoted verbatim. If a reviewer CLI, authentication, or
+model failure prevents review, only the human can explicitly waive DoD 4.
+Cross-review remains part of the Definition of Done, not a default Stop
+hook. The rubric is shared; reviewer-only restrictions live in skills and
+runners so either agent can still implement ordinary tasks.
+
+Codex runs in its read-only sandbox with an ephemeral session. Claude
+runs with only Read/Grep/Glob, `dontAsk`, skills/MCP/hooks disabled, and no
+session persistence; these are CLI tool restrictions, not an OS sandbox.
+Codex's model is configured in `.codex/config.toml`; Claude's model is in
+`.claude/review-model` (default `sonnet`, a moving alias). Both runners
+offer text output and structured output using `.codex/review-schema.json`.
+
+Both runners require `--base`. Codex reports invalid or empty scopes with
+exit 2; Claude uses exit 3. Either requires correcting the scope, never a
+review waiver.
 
 ## Consequences
 
-The same rubric drives local CLI review, headless `codex exec` review, and
-Codex cloud PR review with no extra configuration. Because there is no
-Stop hook by default, a task can still be declared done without review
-having actually run — the honesty burden sits on the "Remaining risks"
-section of the completion report and on the human seeing an unwaived DoD
-item, not on a hook that would block the commit outright. Hardening that
-enforcement is documented as an opt-in, not shipped by default.
+Teams can choose their implementer while retaining an independent review
+and one rubric. Claude's JSON envelope is validated with Node >= 20 before
+the runner publishes a result. Reviewer configuration and compatibility
+need maintenance for both CLIs. A task can still be declared done without
+review having run; the completion report must expose any unwaived DoD
+item under Remaining risks. Stop-hook enforcement is opt-in hardening.
 
 ## Alternatives considered
 
-- **A Stop-hook-enforced review gate** — considered and documented as
-  opt-in hardening; rejected as the default because it would make every
-  commit depend on an external CLI's availability.
-- **Role inversion (Codex implements, Claude reviews)** — considered
-  after comparing against an external Claude+Codex workflow that inverts
-  the roles; rejected because this harness lives on the implementer side,
-  where Claude Code's tooling is richer, and Codex's review tooling
-  (native `AGENTS.md` reading, `codex review`) is the better fit for the
-  reviewer side.
+- **A Stop-hook-enforced review gate** — documented as opt-in; rejected
+  as the default because every stop would depend on an external CLI.
+- **Fixed roles (Claude implements, Codex reviews)** — the original
+  decision favored Claude's implementer tooling and Codex's native review.
+  The 2026-09-04 amendment supports the reverse direction with the same
+  scope checks, rubric, finding evaluation, and human waiver requirement.

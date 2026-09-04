@@ -1,7 +1,7 @@
 ---
 name: cross-review
 description: Run the Codex cross-review of this branch (Definition of Done item 4) and evaluate its findings - use after the gate is green and before declaring a task done, or when asked to "cross-review", "run codex review", "get the review verdict".
-argument-hint: "--base <ref> [--structured]"
+argument-hint: "--base <saved-task-start-sha> [--structured]"
 allowed-tools: Bash(.claude/skills/cross-review/codex_review.sh:*), Bash(git:*), Read
 ---
 
@@ -23,6 +23,11 @@ The runner also accepts a commit ref and resolves its merge-base with HEAD
 once for both review modes, but it never defaults to `main` or `HEAD~1`.
 If no base was recorded, identify the pre-task commit from Git history
 and the task's scope; ask for clarification if that scope is uncertain.
+
+This skill is for **Claude implementation -> Codex review**. When Codex
+implements, use `.agents/skills/cross-review/SKILL.md`, which runs Claude
+through `tool/claude_review.sh` instead. Do not ask the implementing model
+to act as its own cross-reviewer.
 
 **Commit first:** the script diffs committed HEAD against the base and
 refuses a dirty tree (uncommitted or untracked files) with exit 3 - commit
