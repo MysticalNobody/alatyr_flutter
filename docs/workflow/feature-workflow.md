@@ -4,6 +4,19 @@ The graph-first ritual, step by step, with the exact commands and skills —
 and the roles that make "the agent implements; tools verify; an
 independent AI reviews; the human decides" hold in practice.
 
+## Before the first edit
+
+Use the task's existing branch/worktree, or create a working branch with
+`git switch -c codex/<task-name>`. Run `git rev-parse HEAD` and record the
+printed SHA in the task plan or task conversation as the review base.
+Keep that same SHA through every implementation/fix commit and session
+restart. Set `TASK_BASE` to this saved value when running cross-review;
+do not recompute it after committing or guess `HEAD~1`.
+
+For work already started without a saved base, identify the pre-task
+commit from history and the intended scope. If the scope is uncertain,
+ask the human to clarify it; an incorrect base is not a review waiver.
+
 ## The ritual
 
 1. **Edit the graph.** Propose the package shape by editing
@@ -34,12 +47,15 @@ independent AI reviews; the human decides" hold in practice.
    impl dir]` once the first green implementation of the new behavior
    exists (Definition of Done item 2).
 7. **Full gate:** `tool/checks.sh` (no flags) — green before review.
-8. **Cross-review:** commit first, then `/cross-review` — an independent
+8. **Cross-review:** commit first, then `/cross-review --base <saved-sha>` — an independent
    Codex pass over the whole diff (Definition of Done item 4). The script
    diffs committed HEAD against the base and refuses a dirty tree
    (uncommitted or untracked files) with exit 3; that exit is recoverable —
-   commit and re-run. The other exit-3 reasons (codex absent, not logged
-   in, the pinned model rejected, base ref missing) are honest failures:
+   commit and re-run. A missing/invalid base, no common ancestor, or an
+   empty diff is exit 2: correct the scope using the saved base, never
+   waive review. If there are truly no net changes, report that fact
+   instead of selecting an unrelated base. The other exit-3 reasons
+   (codex absent, not logged in, the pinned model rejected) are honest failures:
    stop, report the reason verbatim under Remaining risks, and let the
    human waive Definition of Done item 4.
 9. **Human behavioral check** for any UI-affecting change (Definition of
@@ -133,7 +149,15 @@ printf '%s' "$payload" | grep -q '"stop_hook_active"[[:space:]]*:[[:space:]]*tru
 # logged in, dirty tree) must not trap the session in an unstoppable loop.
 # Swap `exit 0` for `exit 2` + the stderr reason if you want a missing
 # reviewer to block Stop instead.
-review_file="$(.claude/skills/cross-review/codex_review.sh --structured)" || exit 0
+# Configure TASK_BASE in this hook's environment from the saved task SHA;
+# never derive it from HEAD at Stop time, after the task was committed.
+[[ -n "${TASK_BASE:-}" ]] || { echo "Set TASK_BASE to the saved pre-task SHA" >&2; exit 2; }
+review_file="$(.claude/skills/cross-review/codex_review.sh --base "$TASK_BASE" --structured)" || {
+  status=$?
+  # Scope/usage errors must be corrected, not treated as reviewer downtime.
+  [[ "$status" -eq 2 ]] && exit 2
+  exit 0
+}
 verdict="$(grep -o '"verdict"[[:space:]]*:[[:space:]]*"[^"]*"' "$review_file" \
   | sed -E 's/.*"([a-z_]+)"$/\1/')"
 
